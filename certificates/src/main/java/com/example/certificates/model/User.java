@@ -1,5 +1,6 @@
 package com.example.certificates.model;
 
+import com.example.certificates.enums.UserRole;
 import lombok.*;
 
 import javax.persistence.Entity;
@@ -19,4 +20,10 @@ public class User implements Serializable {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    private String email;
+
+    private String password;
+
+    private UserRole role;
 }
