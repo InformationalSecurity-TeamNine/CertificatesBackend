@@ -42,7 +42,7 @@ public class WebSecurityConfiguration {
         http.headers().frameOptions().disable();
         http.csrf().disable()
                 .authorizeRequests()
-//                .antMatchers("/api/user/login").permitAll()
+                .antMatchers(HttpMethod.GET, "/api/certificate").permitAll()
 //                .antMatchers(HttpMethod.GET, "/api/user/{id}/resetPassword").permitAll()
 //                .antMatchers(HttpMethod.PUT, "/api/user/{id}/resetPassword").permitAll()
                 .antMatchers("/api/**").authenticated()
