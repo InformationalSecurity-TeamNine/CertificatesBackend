@@ -1,11 +1,13 @@
 package com.example.certificates.controller;
 
 import com.example.certificates.dto.LoginDTO;
+import com.example.certificates.dto.RegistrationDTO;
 import com.example.certificates.dto.TokenDTO;
+import com.example.certificates.dto.UserDTO;
 import com.example.certificates.model.ErrorResponseMessage;
 import com.example.certificates.security.JwtTokenUtil;
 import com.example.certificates.security.SecurityUser;
-import com.example.certificates.service.IUserService;
+import com.example.certificates.service.interfaces.IUserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.MessageSource;
 import org.springframework.http.HttpStatus;
@@ -37,6 +39,14 @@ public class UserController {
 
         this.userService = userService;
         this.messageSource = messageSource;
+    }
+
+    @PostMapping("/register")
+    public ResponseEntity<UserDTO> register(@Valid @RequestBody RegistrationDTO registrationDTO){
+        UserDTO newUser = this.userService.register(registrationDTO);
+
+        return new ResponseEntity<>(newUser, HttpStatus.OK);
+
     }
 
     @PostMapping("/login")
