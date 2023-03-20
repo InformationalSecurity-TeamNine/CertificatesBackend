@@ -39,11 +39,11 @@ public class UserDTO {
      *
      * */
     @NotEmpty(message = "{required}")
-    @Length(max=50, message = "{maxLength}")
+    @Pattern(regexp = "^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[#?!@$%^&*-]).{8,}$", message = "{invalidPasswordFormat}")
     private String password;
 
     @NotEmpty(message = "{required}")
-    @Length(max=50, message = "{maxLength}")
+    @Pattern(regexp = "^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[#?!@$%^&*-]).{8,}$" , message = "{invalidPasswordFormat}")
     private String repeatPassword;
 
     public UserDTO(User user){
