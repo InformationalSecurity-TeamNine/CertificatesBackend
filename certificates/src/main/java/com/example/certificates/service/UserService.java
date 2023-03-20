@@ -1,6 +1,5 @@
 package com.example.certificates.service;
 
-import com.example.certificates.dto.RegistrationDTO;
 import com.example.certificates.dto.UserDTO;
 import com.example.certificates.model.User;
 import com.example.certificates.repository.UserRepository;
@@ -17,7 +16,7 @@ public class UserService implements IUserService {
         this.userRepository = userRepository;
     }
     @Override
-    public UserDTO register(RegistrationDTO registrationDTO) {
+    public UserDTO register(UserDTO registrationDTO) {
         // do logic
         User user = new User();
         this.userRepository.save(user);
