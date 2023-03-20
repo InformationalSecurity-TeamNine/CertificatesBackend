@@ -34,10 +34,10 @@ public class UserControllerTest {
     @BeforeAll
     private void initalize(){
         headers.setContentType(MediaType.APPLICATION_JSON);
-        private String adminEmail = "";
-        private String adminPassword = "";
-        private String userEmail = "";
-        private String userPassword = "";
+        String adminEmail = "";
+        String adminPassword = "";
+        String userEmail = "";
+        String userPassword = "";
         loginAsAdmin(adminEmail, adminPassword);
         loginAsUser(userEmail, userPassword);
         createRestTemplatesForUsers();
