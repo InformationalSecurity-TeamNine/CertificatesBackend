@@ -43,6 +43,7 @@ public class UserController {
     @PostMapping("/register")
     public ResponseEntity<RegisteredUserDTO> register(@Valid @RequestBody UserDTO userDTO){
 
+
         RegisteredUserDTO newUser = this.userService.register(userDTO);
 
         return new ResponseEntity<>(newUser, HttpStatus.OK);
@@ -55,8 +56,14 @@ public class UserController {
 
             TokenDTO token = new TokenDTO();
             SecurityUser userDetails = (SecurityUser) this.userService.findByUsername(login.getEmail());
-            boolean isEmailConfirmed = this.userService.getIsEmailConfirmed(login.getEmail());
 
+
+            boolean isEmailConfirmed = this.userService.getIsEmailConfirmed(login.getEmail());
+            if(!isEmailConfirmed){
+                return new ResponseEntity(new ErrorResponseMessage(
+                        this.messageSource.getMessage("user.emailNotConfirmed", null, Locale.getDefault())
+                ), HttpStatus.BAD_REQUEST);
+            }
 
             String tokenValue = this.jwtTokenUtil.generateToken(userDetails);
             token.setToken(tokenValue);

@@ -3,11 +3,14 @@ package com.example.certificates.service;
 import com.example.certificates.controller.RegisteredUserDTO;
 import com.example.certificates.dto.UserDTO;
 import com.example.certificates.enums.UserRole;
+import com.example.certificates.exceptions.InvalidRepeatPasswordException;
+import com.example.certificates.exceptions.UserAlreadyExistsException;
 import com.example.certificates.model.User;
 import com.example.certificates.repository.UserRepository;
 import com.example.certificates.service.interfaces.IUserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
@@ -23,22 +26,22 @@ public class UserService implements IUserService {
     @Override
     public RegisteredUserDTO register(UserDTO registrationDTO) {
 
+        checkValidUserInformation(registrationDTO);
+        User user = getUserFromRegistrationDTO(registrationDTO);
+        return new RegisteredUserDTO(user);
+    }
+
+    private void checkValidUserInformation(UserDTO registrationDTO) {
         if(this.emailExists(registrationDTO.getEmail()))
         {
-            // do logic throw exception
-            return null;
+            throw new UserAlreadyExistsException("User with that email already exists!");
         }
         if(this.telephoneNumberExists(registrationDTO.getTelephoneNumber())){
-            // do logic
-            return null;
+            throw new UserAlreadyExistsException("User with that telephone number already exists!");
         }
         if(!registrationDTO.getPassword().equals(registrationDTO.getRepeatPassword())){
-            // do logic
-            return null;
+           throw new InvalidRepeatPasswordException("The passwords dont match!");
         }
-        User user = getUserFromRegistrationDTO(registrationDTO);
-
-        return new RegisteredUserDTO(user);
     }
 
     @Override
@@ -50,17 +53,19 @@ public class UserService implements IUserService {
 
     @Override
     public boolean getIsEmailConfirmed(String email) {
-        return this.userRepository.findByEmail(email).isPresent();
+        return this.userRepository.isEmailConfirmed(email).isPresent();
     }
 
     private User getUserFromRegistrationDTO(UserDTO registrationDTO) {
         User user = new User();
         user.setEmail(registrationDTO.getEmail());
-        user.setPassword(registrationDTO.getPassword());
+        BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+        user.setPassword(passwordEncoder.encode(registrationDTO.getPassword()));
         user.setRole(UserRole.REGISTERED);
         user.setTelephoneNumber(registrationDTO.getTelephoneNumber());
         user.setSurname(registrationDTO.getSurname());
         user.setName(registrationDTO.getName());
+        user.setEmailConfirmed(false);
         user = this.userRepository.save(user);
         return user;
     }

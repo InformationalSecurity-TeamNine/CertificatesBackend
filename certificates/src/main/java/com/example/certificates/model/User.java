@@ -13,6 +13,7 @@ import java.io.Serializable;
 @AllArgsConstructor
 @EqualsAndHashCode
 @ToString
+@Table(name = "Users")
 public class User implements Serializable {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -32,4 +33,7 @@ public class User implements Serializable {
     @Enumerated(EnumType.STRING)
     @Column
     private UserRole role;
+
+    private boolean isEmailConfirmed;
+
 }
