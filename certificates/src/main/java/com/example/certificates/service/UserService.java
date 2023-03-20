@@ -17,7 +17,8 @@ public class UserService implements IUserService {
     }
     @Override
     public UserDTO register(UserDTO registrationDTO) {
-        // do logic
+        // check if email exists, fields are validated in controller
+        // check if phone number exists
         User user = new User();
         this.userRepository.save(user);
         return null;
