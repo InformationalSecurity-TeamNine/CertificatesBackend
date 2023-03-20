@@ -41,9 +41,9 @@ public class UserController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<UserDTO> register(@Valid @RequestBody UserDTO userDTO){
+    public ResponseEntity<RegisteredUserDTO> register(@Valid @RequestBody UserDTO userDTO){
 
-        UserDTO newUser = this.userService.register(userDTO);
+        RegisteredUserDTO newUser = this.userService.register(userDTO);
 
         return new ResponseEntity<>(newUser, HttpStatus.OK);
 
@@ -54,9 +54,8 @@ public class UserController {
         try {
 
             TokenDTO token = new TokenDTO();
-            //SecurityUser userDetails = (SecurityUser) this.userService.findByUsername(login.getEmail());
-            SecurityUser userDetails = null;
-            //boolean isEmailConfirmed = this.passengerService.getIsEmailConfirmed(login.getEmail());
+            SecurityUser userDetails = (SecurityUser) this.userService.findByUsername(login.getEmail());
+            boolean isEmailConfirmed = this.userService.getIsEmailConfirmed(login.getEmail());
 
 
             String tokenValue = this.jwtTokenUtil.generateToken(userDetails);
