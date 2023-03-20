@@ -9,3 +9,6 @@ values ('bogdan@gmail.com', '$2a$12$2AC05eNYundzzLYOhY14w.cZE/UBIIr4xZZ3N42.Gxd8
 
 insert into Users(email, password, name, surname, telephone_number, role, is_email_confirmed)
 values ('dusan@gmail.com', '$2a$12$pOWqvnMcnitY5KihwitVd.SKXLTqQq7uybnKYv3161mYmKqKCglOS', 'Dusan', 'Bibin', '06421412', 'REGISTERED', true);
+
+insert into Users(email, password, name, surname, telephone_number, role, is_email_confirmed)
+values ('mirko@gmail.com', '$2a$12$VfsULMyyWkkn64G70ERZ3.lrXnKTfrft6VQwYJ1PZk59DkJp0yuWq', 'Mirko', 'Babic', '06444421', 'REGISTERED', false);
