@@ -33,12 +33,20 @@ public class CertificateController {
                                 HttpStatus.OK);
     }
 
+    @GetMapping(value = "/past-requests/")
+    public ResponseEntity<Paginated<CertificateDTO>> getPastCertificates(){
+
+        Paginated<CertificateDTO> allCertificates = this.certificateService.getAll();
+        return new ResponseEntity<>(allCertificates, HttpStatus.OK);
+    }
+
     @PutMapping(value = "/accept-request/{id}")
     public ResponseEntity<AcceptRequestDTO> acceptRequest(@PathVariable Long id){
+        return new ResponseEntity<>(null, HttpStatus.OK);
     }
 
     @PutMapping(value = "/decline-request/{id}")
     public ResponseEntity<DeclineRequestDTO> declineRequest(@PathVariable Long id){
-
+        return new ResponseEntity<>(null, HttpStatus.OK);
     }
 }
