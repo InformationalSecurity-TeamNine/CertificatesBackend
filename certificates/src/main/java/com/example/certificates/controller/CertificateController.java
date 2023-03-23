@@ -2,6 +2,7 @@ package com.example.certificates.controller;
 import com.example.certificates.dto.AcceptRequestDTO;
 import com.example.certificates.dto.CertificateDTO;
 import com.example.certificates.dto.DeclineRequestDTO;
+import com.example.certificates.model.Certificate;
 import com.example.certificates.model.Paginated;
 import com.example.certificates.service.interfaces.ICertificateService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,17 +29,17 @@ public class CertificateController {
     @GetMapping
     public ResponseEntity<Paginated<CertificateDTO>> getCertificates(){
 
-        return new ResponseEntity<>(
-                new Paginated<>(0, new HashSet<>()),
-                                HttpStatus.OK);
+        Paginated<CertificateDTO> allCertificates = this.certificateService.getAll();
+        return new ResponseEntity<>(allCertificates, HttpStatus.OK);
     }
 
     @PutMapping(value = "/accept-request/{id}")
     public ResponseEntity<AcceptRequestDTO> acceptRequest(@PathVariable Long id){
+        return new ResponseEntity<>(null, HttpStatus.OK);
     }
 
     @PutMapping(value = "/decline-request/{id}")
     public ResponseEntity<DeclineRequestDTO> declineRequest(@PathVariable Long id){
-
+        return new ResponseEntity<>(null, HttpStatus.OK);
     }
 }
