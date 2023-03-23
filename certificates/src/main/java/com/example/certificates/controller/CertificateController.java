@@ -1,11 +1,11 @@
 package com.example.certificates.controller;
-import com.example.certificates.dto.AcceptRequestDTO;
-import com.example.certificates.dto.CertificateDTO;
-import com.example.certificates.dto.DeclineRequestDTO;
+import com.example.certificates.dto.*;
+import com.example.certificates.model.CertificateRequest;
 import com.example.certificates.model.Paginated;
 import com.example.certificates.service.interfaces.ICertificateService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -40,5 +40,11 @@ public class CertificateController {
     @PutMapping(value = "/decline-request/{id}")
     public ResponseEntity<DeclineRequestDTO> declineRequest(@PathVariable Long id){
 
+    }
+
+    @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<CertificateRequestDTO> create(@Valid @RequestBody CertificateRequestDTO certificateRequest) {
+        CertificateRequest newRequest = this.certificateService.createRequest(certificateRequest);
+        return new ResponseEntity<>(new CertificateRequestDTO(newRequest), HttpStatus.OK);
     }
 }
