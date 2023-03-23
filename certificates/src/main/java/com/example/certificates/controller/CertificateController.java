@@ -1,6 +1,8 @@
 package com.example.certificates.controller;
 import com.example.certificates.dto.CertificateDTO;
 import com.example.certificates.model.Paginated;
+import com.example.certificates.service.interfaces.ICertificateService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -15,6 +17,12 @@ import java.util.List;
 @RequestMapping("api/certificate")
 public class CertificateController {
 
+    private ICertificateService certificateService;
+
+    @Autowired
+    public CertificateController(ICertificateService certificateService){
+        this.certificateService = certificateService;
+    }
     @GetMapping
     public ResponseEntity<Paginated<CertificateDTO>> getCertificates(){
 
