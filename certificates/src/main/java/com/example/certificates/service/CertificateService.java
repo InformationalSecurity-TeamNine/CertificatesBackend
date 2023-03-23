@@ -12,4 +12,10 @@ public class CertificateService implements ICertificateService {
     public Paginated<Certificate> getAll() {
         return null;
     }
+
+    @Override
+    public boolean isCertificateValid(Long id) {
+        return false;
+    }
+
 }

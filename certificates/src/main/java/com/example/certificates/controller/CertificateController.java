@@ -35,10 +35,18 @@ public class CertificateController {
 
     @PutMapping(value = "/accept-request/{id}")
     public ResponseEntity<AcceptRequestDTO> acceptRequest(@PathVariable Long id){
+        return new ResponseEntity<>(null, HttpStatus.OK);
     }
 
     @PutMapping(value = "/decline-request/{id}")
     public ResponseEntity<DeclineRequestDTO> declineRequest(@PathVariable Long id){
+        return new ResponseEntity<>(null, HttpStatus.OK);
+    }
 
+    @GetMapping(value = "/cert-validity/{id}")
+    public ResponseEntity<Boolean> checkValidity(@PathVariable Long id){
+
+        boolean validityCheck = this.certificateService.isCertificateValid(id);
+        return new ResponseEntity<>(validityCheck, HttpStatus.OK);
     }
 }
