@@ -9,8 +9,6 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class DeclineRequestDTO {
-
-    private Long requestId;
+public class DeclineReasonDTO {
     private String reason;
 }

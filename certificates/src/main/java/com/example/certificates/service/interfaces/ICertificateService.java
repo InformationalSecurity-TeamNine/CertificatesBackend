@@ -9,7 +9,7 @@ public interface ICertificateService {
 
     Paginated<Certificate> getAll();
 
-    DeclineRequestDTO declineRequest(Long id);
+    DeclineRequestDTO declineRequest(Long id, String declineReason);
 
     AcceptRequestDTO acceptRequest(Long id);
 }

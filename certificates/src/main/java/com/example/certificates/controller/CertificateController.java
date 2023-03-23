@@ -1,6 +1,7 @@
 package com.example.certificates.controller;
 import com.example.certificates.dto.AcceptRequestDTO;
 import com.example.certificates.dto.CertificateDTO;
+import com.example.certificates.dto.DeclineReasonDTO;
 import com.example.certificates.dto.DeclineRequestDTO;
 import com.example.certificates.model.Paginated;
 import com.example.certificates.service.interfaces.ICertificateService;
@@ -41,8 +42,10 @@ public class CertificateController {
     }
 
     @PutMapping(value = "/decline-request/{id}")
-    public ResponseEntity<DeclineRequestDTO> declineRequest(@PathVariable Long id){
-        DeclineRequestDTO declineRequest = this.certificateService.declineRequest(id);
+    public ResponseEntity<DeclineRequestDTO> declineRequest(
+            @PathVariable Long id,
+            @RequestBody DeclineReasonDTO declineReason){
+        DeclineRequestDTO declineRequest = this.certificateService.declineRequest(id, declineReason);
 
         return new ResponseEntity<>(declineRequest, HttpStatus.OK);
     }
