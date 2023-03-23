@@ -1,6 +1,6 @@
 package com.example.certificates.service.interfaces;
 
-import com.example.certificates.controller.RegisteredUserDTO;
+import com.example.certificates.dto.RegisteredUserDTO;
 import com.example.certificates.dto.UserDTO;
 import org.springframework.security.core.userdetails.UserDetails;
 

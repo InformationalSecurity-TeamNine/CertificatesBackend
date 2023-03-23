@@ -1,6 +1,6 @@
 package com.example.certificates.service;
 
-import com.example.certificates.controller.RegisteredUserDTO;
+import com.example.certificates.dto.RegisteredUserDTO;
 import com.example.certificates.dto.UserDTO;
 import com.example.certificates.enums.UserRole;
 import com.example.certificates.exceptions.InvalidRepeatPasswordException;
@@ -13,6 +13,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 @Service
@@ -61,11 +62,12 @@ public class UserService implements IUserService {
         user.setEmail(registrationDTO.getEmail());
         BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
         user.setPassword(passwordEncoder.encode(registrationDTO.getPassword()));
-        user.setRole(UserRole.REGISTERED);
+        user.setRole(UserRole.BASIC_USER);
         user.setTelephoneNumber(registrationDTO.getTelephoneNumber());
         user.setSurname(registrationDTO.getSurname());
         user.setName(registrationDTO.getName());
         user.setEmailConfirmed(false);
+        user.setLastTimePasswordChanged(LocalDateTime.now());
         user = this.userRepository.save(user);
         return user;
     }

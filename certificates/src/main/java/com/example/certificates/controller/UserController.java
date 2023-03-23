@@ -1,6 +1,7 @@
 package com.example.certificates.controller;
 
 import com.example.certificates.dto.LoginDTO;
+import com.example.certificates.dto.RegisteredUserDTO;
 import com.example.certificates.dto.TokenDTO;
 import com.example.certificates.dto.UserDTO;
 import com.example.certificates.model.ErrorResponseMessage;

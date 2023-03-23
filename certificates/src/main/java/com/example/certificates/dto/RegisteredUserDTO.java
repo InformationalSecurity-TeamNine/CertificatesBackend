@@ -1,4 +1,4 @@
-package com.example.certificates.controller;
+package com.example.certificates.dto;
 import com.example.certificates.model.User;
 import lombok.*;
 

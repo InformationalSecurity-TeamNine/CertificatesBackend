@@ -1,10 +1,14 @@
 package com.example.certificates.model;
 
 import com.example.certificates.enums.UserRole;
+import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.*;
 
 import javax.persistence.*;
 import java.io.Serializable;
+import java.time.LocalDateTime;
+import java.util.Date;
+import java.util.List;
 
 @Entity
 @Getter
@@ -35,5 +39,12 @@ public class User implements Serializable {
     private UserRole role;
 
     private boolean isEmailConfirmed;
+
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
+    private LocalDateTime lastTimePasswordChanged;
+
+    @OneToMany(cascade = {CascadeType.REFRESH}, fetch = FetchType.LAZY)
+    private List<Certificate> certificates;
+
 
 }
