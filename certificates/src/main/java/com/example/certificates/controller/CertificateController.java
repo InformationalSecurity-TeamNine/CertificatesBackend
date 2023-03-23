@@ -50,8 +50,8 @@ public class CertificateController {
     @PutMapping(value = "/decline-request/{id}")
     public ResponseEntity<DeclineRequestDTO> declineRequest(
             @PathVariable Long id,
-            @RequestBody DeclineReasonDTO declineReason){
-        DeclineRequestDTO declineRequest = this.certificateService.declineRequest(id, declineReason);
+            @Valid @RequestBody DeclineReasonDTO declineReason){
+        DeclineRequestDTO declineRequest = this.certificateService.declineRequest(id, declineReason.getReason());
 
         return new ResponseEntity<>(declineRequest, HttpStatus.OK);
     }
