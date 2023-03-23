@@ -1,9 +1,14 @@
 package com.example.certificates.service;
 
+
+import com.example.certificates.dto.CertificateRequestDTO;
+
 import com.example.certificates.dto.AcceptRequestDTO;
 import com.example.certificates.dto.DeclineRequestDTO;
 import com.example.certificates.enums.CertificateType;
+
 import com.example.certificates.model.Certificate;
+import com.example.certificates.model.CertificateRequest;
 import com.example.certificates.model.Paginated;
 import com.example.certificates.repository.CertificateRepository;
 import com.example.certificates.service.interfaces.ICertificateService;
@@ -28,6 +33,11 @@ public class CertificateService implements ICertificateService {
     }
 
     @Override
+
+    public CertificateRequest createRequest(CertificateRequestDTO certificateRequest) {
+        return null;
+        }
+
     public DeclineRequestDTO declineRequest(Long id, String declineReason) {
         DeclineRequestDTO declineRequestDTO =
                 new DeclineRequestDTO(id,
