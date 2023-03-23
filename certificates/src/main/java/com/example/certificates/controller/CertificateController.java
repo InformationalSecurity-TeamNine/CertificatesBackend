@@ -1,11 +1,18 @@
 package com.example.certificates.controller;
+
+import com.example.certificates.dto.*;
+import com.example.certificates.model.CertificateRequest;
+
 import com.example.certificates.dto.AcceptRequestDTO;
 import com.example.certificates.dto.CertificateDTO;
+import com.example.certificates.dto.DeclineReasonDTO;
 import com.example.certificates.dto.DeclineRequestDTO;
+import com.example.certificates.model.Certificate;
 import com.example.certificates.model.Paginated;
 import com.example.certificates.service.interfaces.ICertificateService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -28,9 +35,8 @@ public class CertificateController {
     @GetMapping
     public ResponseEntity<Paginated<CertificateDTO>> getCertificates(){
 
-        return new ResponseEntity<>(
-                new Paginated<>(0, new HashSet<>()),
-                                HttpStatus.OK);
+        Paginated<CertificateDTO> allCertificates = this.certificateService.getAll();
+        return new ResponseEntity<>(allCertificates, HttpStatus.OK);
     }
 
     @GetMapping(value = "/past-requests/")
@@ -42,11 +48,24 @@ public class CertificateController {
 
     @PutMapping(value = "/accept-request/{id}")
     public ResponseEntity<AcceptRequestDTO> acceptRequest(@PathVariable Long id){
-        return new ResponseEntity<>(null, HttpStatus.OK);
+
+        AcceptRequestDTO acceptRequest = this.certificateService.acceptRequest(id);
+
+        return new ResponseEntity<>(acceptRequest, HttpStatus.OK);
     }
 
     @PutMapping(value = "/decline-request/{id}")
-    public ResponseEntity<DeclineRequestDTO> declineRequest(@PathVariable Long id){
-        return new ResponseEntity<>(null, HttpStatus.OK);
+    public ResponseEntity<DeclineRequestDTO> declineRequest(
+            @PathVariable Long id,
+            @Valid @RequestBody DeclineReasonDTO declineReason){
+        DeclineRequestDTO declineRequest = this.certificateService.declineRequest(id, declineReason.getReason());
+
+        return new ResponseEntity<>(declineRequest, HttpStatus.OK);
+    }
+
+    @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<CertificateRequestDTO> create(@Valid @RequestBody CertificateRequestDTO certificateRequest) {
+        CertificateRequest newRequest = this.certificateService.createRequest(certificateRequest);
+        return new ResponseEntity<>(new CertificateRequestDTO(newRequest), HttpStatus.OK);
     }
 }
