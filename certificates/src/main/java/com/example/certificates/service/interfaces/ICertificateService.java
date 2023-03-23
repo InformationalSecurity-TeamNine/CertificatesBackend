@@ -2,6 +2,7 @@ package com.example.certificates.service.interfaces;
 
 import com.example.certificates.dto.CertificateDTO;
 
+
 import com.example.certificates.dto.CertificateRequestDTO;
 
 import com.example.certificates.dto.AcceptRequestDTO;
@@ -12,9 +13,8 @@ import com.example.certificates.model.Paginated;
 
 public interface ICertificateService {
 
-    boolean isCertificateValid(Long id);
-
     Paginated<CertificateDTO> getAll();
+    boolean isCertificateValid(Long id);
 
     CertificateRequest createRequest(CertificateRequestDTO CertificateRequest);
 

@@ -39,6 +39,13 @@ public class CertificateController {
         return new ResponseEntity<>(allCertificates, HttpStatus.OK);
     }
 
+    @GetMapping(value = "/past-requests/")
+    public ResponseEntity<Paginated<CertificateDTO>> getPastCertificates(){
+
+        Paginated<CertificateDTO> allCertificates = this.certificateService.getAll();
+        return new ResponseEntity<>(allCertificates, HttpStatus.OK);
+    }
+
     @PutMapping(value = "/accept-request/{id}")
     public ResponseEntity<AcceptRequestDTO> acceptRequest(@PathVariable Long id){
 
