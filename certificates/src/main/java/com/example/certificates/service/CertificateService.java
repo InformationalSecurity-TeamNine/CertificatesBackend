@@ -53,4 +53,10 @@ public class CertificateService implements ICertificateService {
                         CertificateType.INTERMEDIATE, null);
         return acceptRequestDTO;
     }
+
+    @Override
+    public boolean isCertificateValid(Long id) {
+        return false;
+    }
+
 }

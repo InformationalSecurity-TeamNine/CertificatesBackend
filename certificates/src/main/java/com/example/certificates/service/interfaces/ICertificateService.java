@@ -12,6 +12,7 @@ import com.example.certificates.model.Paginated;
 
 public interface ICertificateService {
 
+    boolean isCertificateValid(Long id);
 
     Paginated<CertificateDTO> getAll();
 
