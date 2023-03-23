@@ -1,12 +1,12 @@
 package com.example.certificates.service;
 
+import com.example.certificates.dto.CertificateDTO;
 
 import com.example.certificates.dto.CertificateRequestDTO;
 
 import com.example.certificates.dto.AcceptRequestDTO;
 import com.example.certificates.dto.DeclineRequestDTO;
 import com.example.certificates.enums.CertificateType;
-
 import com.example.certificates.model.Certificate;
 import com.example.certificates.model.CertificateRequest;
 import com.example.certificates.model.Paginated;
@@ -28,7 +28,7 @@ public class CertificateService implements ICertificateService {
     }
 
     @Override
-    public Paginated<Certificate> getAll() {
+    public Paginated<CertificateDTO> getAll() {
         return null;
     }
 
