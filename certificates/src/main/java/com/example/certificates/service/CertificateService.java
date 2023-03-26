@@ -11,16 +11,19 @@ import com.example.certificates.model.Certificate;
 import com.example.certificates.model.CertificateRequest;
 import com.example.certificates.model.Paginated;
 import com.example.certificates.repository.CertificateRepository;
+import com.example.certificates.security.JwtTokenUtil;
 import com.example.certificates.service.interfaces.ICertificateService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.Objects;
 
 @Service
 public class CertificateService implements ICertificateService {
 
     private CertificateRepository certificateRepository;
+    private JwtTokenUtil tokenUtil;
 
     @Autowired
     public CertificateService(CertificateRepository certificateRepository){
@@ -32,8 +35,30 @@ public class CertificateService implements ICertificateService {
         return null;
     }
 
-    public CertificateRequest createRequest(CertificateRequestDTO certificateRequest) {
-        return null;
+    public CertificateRequest createRequest(CertificateRequestDTO certificateRequest, String authHeader) {
+        String jwtToken = null;
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            jwtToken = authHeader.substring(7);
+        }
+        int userid = tokenUtil.getId(jwtToken);
+        String role = String.valueOf(tokenUtil.getRole(jwtToken));
+        System.out.println(role);
+        if (Objects.equals(role, "ADMIN")){
+            return null;
+            //TODO
+        }
+        else{
+            if (certificateRequest.getCertificateType() == CertificateType.ROOT){
+                return null;
+                //TODO
+            }
+            if (certificateRequest.getIssuer().getId()== userid){
+                return null;
+                        //TODO
+            }
+            return null;
+        }
+
     }
 
     public DeclineRequestDTO declineRequest(Long id, String declineReason) {

@@ -64,8 +64,8 @@ public class CertificateController {
     }
 
     @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<CertificateRequestDTO> create(@Valid @RequestBody CertificateRequestDTO certificateRequest) {
-        CertificateRequest newRequest = this.certificateService.createRequest(certificateRequest);
+    public ResponseEntity<CertificateRequestDTO> create(@Valid @RequestBody CertificateRequestDTO certificateRequest, @RequestHeader("Authorization") String authHeader) {
+        CertificateRequest newRequest = this.certificateService.createRequest(certificateRequest, authHeader);
         return new ResponseEntity<>(new CertificateRequestDTO(newRequest), HttpStatus.OK);
     }
 }

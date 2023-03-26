@@ -16,7 +16,7 @@ public interface ICertificateService {
     Paginated<CertificateDTO> getAll();
     boolean isCertificateValid(Long id);
 
-    CertificateRequest createRequest(CertificateRequestDTO CertificateRequest);
+    CertificateRequest createRequest(CertificateRequestDTO CertificateRequest, String authHeader);
 
 
     DeclineRequestDTO declineRequest(Long id, String declineReason);
