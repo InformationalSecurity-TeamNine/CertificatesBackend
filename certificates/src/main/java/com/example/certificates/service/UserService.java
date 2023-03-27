@@ -66,7 +66,7 @@ public class UserService implements IUserService {
         user.setTelephoneNumber(registrationDTO.getTelephoneNumber());
         user.setSurname(registrationDTO.getSurname());
         user.setName(registrationDTO.getName());
-        user.setEmailConfirmed(false);
+        user.setEmailConfirmed(true);
         user.setLastTimePasswordChanged(LocalDateTime.now());
         user = this.userRepository.save(user);
         return user;
