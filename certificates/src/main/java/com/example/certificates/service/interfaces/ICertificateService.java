@@ -7,20 +7,22 @@ import com.example.certificates.dto.CertificateRequestDTO;
 
 import com.example.certificates.dto.AcceptRequestDTO;
 import com.example.certificates.dto.DeclineRequestDTO;
-import com.example.certificates.model.Certificate;
 import com.example.certificates.model.CertificateRequest;
 import com.example.certificates.model.Paginated;
+
+import java.util.Map;
 
 public interface ICertificateService {
 
     Paginated<CertificateDTO> getAll();
-    boolean isCertificateValid(Long id);
 
-    CertificateRequest createRequest(CertificateRequestDTO CertificateRequest, String authHeader);
+    Paginated<CertificateDTO> getPastCertificates(Map<String, String> authHeader);
+
+    CertificateRequest createRequest(CertificateRequestDTO CertificateRequest, Map<String, String> authHeader);
 
 
-    DeclineRequestDTO declineRequest(Long id, String declineReason);
+    DeclineRequestDTO declineRequest(Long id, String declineReason, Map<String, String> authHeader);
 
-    AcceptRequestDTO acceptRequest(Long id);
+    AcceptRequestDTO acceptRequest(Long id, Map<String, String> authHeader);
 
 }

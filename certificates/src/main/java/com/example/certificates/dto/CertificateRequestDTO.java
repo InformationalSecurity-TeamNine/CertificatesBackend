@@ -8,8 +8,10 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.springframework.lang.Nullable;
 
 import javax.persistence.*;
+import java.util.Date;
 
 @Getter
 @Setter
@@ -18,6 +20,8 @@ import javax.persistence.*;
 public class CertificateRequestDTO {
 
     private Long id;
+
+    Date validTo;
 
     User issuer;
 

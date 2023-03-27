@@ -7,27 +7,37 @@ import com.example.certificates.dto.CertificateRequestDTO;
 import com.example.certificates.dto.AcceptRequestDTO;
 import com.example.certificates.dto.DeclineRequestDTO;
 import com.example.certificates.enums.CertificateType;
-import com.example.certificates.model.Certificate;
 import com.example.certificates.model.CertificateRequest;
 import com.example.certificates.model.Paginated;
 import com.example.certificates.repository.CertificateRepository;
 import com.example.certificates.security.JwtTokenUtil;
+import com.example.certificates.security.UserRequestValidation;
 import com.example.certificates.service.interfaces.ICertificateService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.util.Objects;
+import java.util.Map;
 
 @Service
 public class CertificateService implements ICertificateService {
 
-    private CertificateRepository certificateRepository;
-    private JwtTokenUtil tokenUtil;
+    private final CertificateRepository certificateRepository;
+    private final UserRequestValidation userRequestValidation;
 
+    /*
+        *
+        * String role = this.userRequestValidation.getRoleFromToken(headers);
+        if(role.equalsIgnoreCase("driver")){
+            boolean areIdsEqual = this.userRequestValidation.areIdsEqual(headers, driverId);
+            if(!areIdsEqual) return new ResponseEntity("Driver does not exist!", HttpStatus.NOT_FOUND);
+        }
+        *
+        * */
     @Autowired
-    public CertificateService(CertificateRepository certificateRepository){
+    public CertificateService(CertificateRepository certificateRepository, UserRequestValidation userRequestValidation){
         this.certificateRepository = certificateRepository;
+        this.userRequestValidation = userRequestValidation;
     }
 
     @Override
@@ -35,33 +45,28 @@ public class CertificateService implements ICertificateService {
         return null;
     }
 
-    public CertificateRequest createRequest(CertificateRequestDTO certificateRequest, String authHeader) {
-        String jwtToken = null;
-        if (authHeader != null && authHeader.startsWith("Bearer ")) {
-            jwtToken = authHeader.substring(7);
-        }
-        int userid = tokenUtil.getId(jwtToken);
-        String role = String.valueOf(tokenUtil.getRole(jwtToken));
-        System.out.println(role);
-        if (Objects.equals(role, "ADMIN")){
-            return null;
-            //TODO
-        }
-        else{
-            if (certificateRequest.getCertificateType() == CertificateType.ROOT){
-                return null;
-                //TODO
-            }
-            if (certificateRequest.getIssuer().getId()== userid){
-                return null;
-                        //TODO
-            }
+    @Override
+    public Paginated<CertificateDTO> getPastCertificates(Map<String, String> authHeader) {
+        return null;
+    }
+
+    @Override
+    public CertificateRequest createRequest(CertificateRequestDTO certificateRequest, Map<String, String> authHeader) {
+        String role = this.userRequestValidation.getRoleFromToken(authHeader);
+
+        if(role.equalsIgnoreCase("admin")){
             return null;
         }
+
+
+        Long id = this.userRequestValidation.getIdFromToken(authHeader);
+        return null;
+
+
 
     }
 
-    public DeclineRequestDTO declineRequest(Long id, String declineReason) {
+    public DeclineRequestDTO declineRequest(Long id, String declineReason, Map<String, String> authHeader) {
         DeclineRequestDTO declineRequestDTO =
                 new DeclineRequestDTO(id,
                         declineReason);
@@ -69,7 +74,7 @@ public class CertificateService implements ICertificateService {
     }
 
     @Override
-    public AcceptRequestDTO acceptRequest(Long id) {
+    public AcceptRequestDTO acceptRequest(Long id, Map<String, String> authHeader) {
         AcceptRequestDTO acceptRequestDTO =
                 new AcceptRequestDTO(LocalDateTime.now(),
                         LocalDateTime.now().plusMonths(3),
@@ -77,8 +82,7 @@ public class CertificateService implements ICertificateService {
         return acceptRequestDTO;
     }
 
-    @Override
-    public boolean isCertificateValid(Long id) {
+    private boolean isCertificateValid(Long id) {
         return false;
     }
 

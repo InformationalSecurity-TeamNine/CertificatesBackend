@@ -7,20 +7,17 @@ import com.example.certificates.dto.AcceptRequestDTO;
 import com.example.certificates.dto.CertificateDTO;
 import com.example.certificates.dto.DeclineReasonDTO;
 import com.example.certificates.dto.DeclineRequestDTO;
-import com.example.certificates.model.Certificate;
 import com.example.certificates.model.Paginated;
+import com.example.certificates.security.UserRequestValidation;
 import com.example.certificates.service.interfaces.ICertificateService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
+import java.util.Map;
 
 @CrossOrigin
 @RestController
@@ -41,16 +38,18 @@ public class CertificateController {
     }
 
     @GetMapping(value = "/past-requests/")
-    public ResponseEntity<Paginated<CertificateDTO>> getPastCertificates(){
+    public ResponseEntity<Paginated<CertificateDTO>> getPastCertificates(
+            @RequestHeader Map<String, String> headers){
 
-        Paginated<CertificateDTO> allCertificates = this.certificateService.getAll();
+        Paginated<CertificateDTO> allCertificates = this.certificateService.getPastCertificates(headers);
         return new ResponseEntity<>(allCertificates, HttpStatus.OK);
     }
 
     @PutMapping(value = "/accept-request/{id}")
-    public ResponseEntity<AcceptRequestDTO> acceptRequest(@PathVariable Long id){
+    public ResponseEntity<AcceptRequestDTO> acceptRequest(@PathVariable Long id,
+                                                          @RequestHeader Map<String, String> headers){
 
-        AcceptRequestDTO acceptRequest = this.certificateService.acceptRequest(id);
+        AcceptRequestDTO acceptRequest = this.certificateService.acceptRequest(id, headers);
 
         return new ResponseEntity<>(acceptRequest, HttpStatus.OK);
     }
@@ -58,15 +57,19 @@ public class CertificateController {
     @PutMapping(value = "/decline-request/{id}")
     public ResponseEntity<DeclineRequestDTO> declineRequest(
             @PathVariable Long id,
-            @Valid @RequestBody DeclineReasonDTO declineReason){
-        DeclineRequestDTO declineRequest = this.certificateService.declineRequest(id, declineReason.getReason());
+            @Valid @RequestBody DeclineReasonDTO declineReason,
+            @RequestHeader Map<String, String> headers){
+        DeclineRequestDTO declineRequest = this.certificateService.declineRequest(id, declineReason.getReason(), headers);
 
         return new ResponseEntity<>(declineRequest, HttpStatus.OK);
     }
 
     @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<CertificateRequestDTO> create(@Valid @RequestBody CertificateRequestDTO certificateRequest, @RequestHeader("Authorization") String authHeader) {
-        CertificateRequest newRequest = this.certificateService.createRequest(certificateRequest, authHeader);
+    public ResponseEntity<CertificateRequestDTO> create(
+            @Valid @RequestBody CertificateRequestDTO certificateRequest,
+            @RequestHeader Map<String, String> headers) {
+
+        CertificateRequest newRequest = this.certificateService.createRequest(certificateRequest, headers);
         return new ResponseEntity<>(new CertificateRequestDTO(newRequest), HttpStatus.OK);
     }
 }
