@@ -23,16 +23,16 @@ public class CertificateRequestDTO {
 
     Date validTo;
 
-    User issuer;
+    String issuerSN;
 
-    private Certificate parentCertificate;
+    String username;
 
     private CertificateType certificateType;
 
     public CertificateRequestDTO(CertificateRequest certificateRequest){
         this.id = certificateRequest.getId();
-        this.issuer = certificateRequest.getIssuer();
-        this.parentCertificate = certificateRequest.getParentCertificate();
+        this.username = certificateRequest.getIssuer().getEmail();
+        this.issuerSN = certificateRequest.getParentCertificate().getId().toString();
         this.certificateType = certificateRequest.getCertificateType();
 
     }
