@@ -1,11 +1,7 @@
 package com.example.certificates.service;
 
-import com.example.certificates.dto.CertificateDTO;
+import com.example.certificates.dto.*;
 
-import com.example.certificates.dto.CertificateRequestDTO;
-
-import com.example.certificates.dto.AcceptRequestDTO;
-import com.example.certificates.dto.DeclineRequestDTO;
 import com.example.certificates.enums.CertificateStatus;
 import com.example.certificates.enums.CertificateType;
 import com.example.certificates.exceptions.EndIssuerException;
@@ -14,18 +10,13 @@ import com.example.certificates.exceptions.InvalidIssuerException;
 import com.example.certificates.exceptions.NonExistingCertificateException;
 import com.example.certificates.model.Certificate;
 import com.example.certificates.model.CertificateRequest;
-import com.example.certificates.model.Paginated;
-import com.example.certificates.model.User;
 import com.example.certificates.repository.CertificateRepository;
-import com.example.certificates.security.JwtTokenUtil;
+import com.example.certificates.repository.CertificateRequestRepository;
 import com.example.certificates.security.UserRequestValidation;
 import com.example.certificates.service.interfaces.ICertificateService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.io.FileInputStream;
-import java.security.cert.CertificateFactory;
-import java.security.cert.X509Certificate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
@@ -34,6 +25,8 @@ import java.util.Map;
 public class CertificateService implements ICertificateService {
 
     private final CertificateRepository certificateRepository;
+    private final CertificateRequestRepository certificateRequestRepository;
+
     private final UserRequestValidation userRequestValidation;
 
     /*
@@ -46,8 +39,9 @@ public class CertificateService implements ICertificateService {
         *
         * */
     @Autowired
-    public CertificateService(CertificateRepository certificateRepository, UserRequestValidation userRequestValidation){
+    public CertificateService(CertificateRepository certificateRepository, CertificateRequestRepository certificateRequestRepository, UserRequestValidation userRequestValidation){
         this.certificateRepository = certificateRepository;
+        this.certificateRequestRepository = certificateRequestRepository;
         this.userRequestValidation = userRequestValidation;
     }
 
@@ -57,8 +51,15 @@ public class CertificateService implements ICertificateService {
     }
 
     @Override
-    public List<CertificateDTO> getPastRequests(Map<String, String> authHeader) {
-        return null;
+    public List<CertificateRequestResponse> getPastRequests(Map<String, String> authHeader) {
+
+        String role = this.userRequestValidation.getRoleFromToken(authHeader);
+        if(role.equalsIgnoreCase("admin")){
+            return this.certificateRequestRepository.getAllRequests();
+        }
+        Integer userId = this.userRequestValidation.getUserId(authHeader);
+        return this.certificateRequestRepository.getRequestFromUser(userId);
+
     }
 
     @Override
@@ -169,12 +170,5 @@ public class CertificateService implements ICertificateService {
         return acceptRequestDTO;
     }
 
-    private boolean isCertificateValid(Long id) {
-        return false;
-    }
-
-    private void validateCertificate(CertificateRequestDTO certificateRequest){
-
-    }
 
 }

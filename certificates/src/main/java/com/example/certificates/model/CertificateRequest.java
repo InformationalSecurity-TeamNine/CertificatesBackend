@@ -1,6 +1,7 @@
 package com.example.certificates.model;
 
 import com.example.certificates.enums.CertificateType;
+import com.example.certificates.enums.RequestStatus;
 import lombok.*;
 
 import javax.persistence.*;
@@ -30,5 +31,9 @@ public class CertificateRequest implements Serializable {
 
 
     private String keyUsageFlags;
+
+    @Enumerated(EnumType.STRING)
+    @Column
+    private RequestStatus status;
 
 }

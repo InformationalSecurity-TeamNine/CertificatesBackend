@@ -30,6 +30,8 @@ public class CertificateRequestDTO {
 
     private String keyUsageFlags;
 
+
+
     public CertificateRequestDTO(CertificateRequest certificateRequest){
         this.id = certificateRequest.getId();
         this.username = certificateRequest.getIssuer().getEmail();

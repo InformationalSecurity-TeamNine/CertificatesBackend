@@ -39,10 +39,10 @@ public class CertificateController {
     }
 
     @GetMapping(value = "/past-requests/")
-    public ResponseEntity<List<CertificateDTO>> getPastCertificates(
+    public ResponseEntity<List<CertificateRequestResponse>> getPastCertificates(
             @RequestHeader Map<String, String> headers){
 
-        List<CertificateDTO> allCertificates = this.certificateService.getPastRequests(headers);
+        List<CertificateRequestResponse> allCertificates = this.certificateService.getPastRequests(headers);
         return new ResponseEntity<>(allCertificates, HttpStatus.OK);
     }
 
