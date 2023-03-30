@@ -70,6 +70,7 @@ public class CertificateService implements ICertificateService {
         Integer userId = this.userRequestValidation.getUserId(authHeader);
 
         Certificate issuer = this.certificateRepository.findByIssuerSN(certificateRequest.getIssuerSN());
+        issuer.setUser(this.certificateRepository.getUserByCertificateId(issuer.getId()));
 
         validateIssuerEndCertificate(certificateRequest, issuer);
         validateCertificateEndDate(certificateRequest, issuer);

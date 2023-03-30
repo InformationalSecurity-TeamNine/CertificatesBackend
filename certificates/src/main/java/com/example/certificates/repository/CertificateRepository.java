@@ -2,6 +2,7 @@ package com.example.certificates.repository;
 
 import com.example.certificates.dto.CertificateDTO;
 import com.example.certificates.model.Certificate;
+import com.example.certificates.model.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
@@ -18,4 +19,7 @@ public interface CertificateRepository extends JpaRepository<Certificate, Long> 
             " from Certificate c inner join User u where c.user.id=u.id")
     List<CertificateDTO> getAllCertificates();
 
+
+    @Query("select c.user from Certificate c where c.id=:id")
+    User getUserByCertificateId(Long id);
 }
