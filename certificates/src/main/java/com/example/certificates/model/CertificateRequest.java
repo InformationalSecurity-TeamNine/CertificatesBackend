@@ -29,11 +29,10 @@ public class CertificateRequest implements Serializable {
     @Column
     private CertificateType certificateType;
 
-
-    private String keyUsageFlags;
-
     @Enumerated(EnumType.STRING)
     @Column
     private RequestStatus status;
+
+    private String reason;
 
 }

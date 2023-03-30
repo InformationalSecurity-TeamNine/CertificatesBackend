@@ -105,6 +105,15 @@ public class ValidationHandler {
     }
 
 
+    @ExceptionHandler(value
+            = NonExistingRequestException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public @ResponseBody ErrorResponse
+    handleNonExistingRequestException(NonExistingRequestException ex)
+    {
+        return new ErrorResponse(ex.getMessage());
+    }
+
 
 
     @ExceptionHandler(AccessDeniedException.class)

@@ -19,6 +19,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 @Service
 public class CertificateService implements ICertificateService {
@@ -175,9 +176,23 @@ public class CertificateService implements ICertificateService {
     }
 
     public DeclineRequestDTO declineRequest(Long id, String declineReason, Map<String, String> authHeader) {
-        DeclineRequestDTO declineRequestDTO =
-                new DeclineRequestDTO(id,
-                        declineReason);
+
+        Integer userId = this.userRequestValidation.getUserId(authHeader);
+
+        Optional<CertificateRequest> request = this.certificateRequestRepository.findById(id);
+        if(request.isEmpty()) throw new NonExistingRequestException("The request with the given id doesn't exist");
+
+
+        if(userId.longValue() != this.certificateRequestRepository.getIssuerCertificateUserIdByRequestId(request.get().getId())){
+            throw new NonExistingRequestException("The request with the given id doesn't exist");
+        }
+
+        request.get().setStatus(RequestStatus.DECLINED);
+        request.get().setReason(declineReason);
+        DeclineRequestDTO declineRequestDTO = new DeclineRequestDTO(request.get().getId(), declineReason);
+        this.certificateRequestRepository.save(request.get());
+
+
         return declineRequestDTO;
     }
 

@@ -19,4 +19,9 @@ public interface CertificateRequestRepository extends JpaRepository<CertificateR
     @Query("select new com.example.certificates.dto.CertificateRequestResponse(c.id, c.parentCertificate.serialNumber, c.issuer.email, c.keyUsageFlags, c.status, c.certificateType)" +
             " from CertificateRequest c where c.issuer.id=:userId")
     List<CertificateRequestResponse> getRequestFromUser(Integer userId);
+
+
+    @Query("select u.id from CertificateRequest cr inner join Certificate c on cr.parentCertificate=c " +
+            "inner join User u on c.user.id=u.id where cr.id=:requestId")
+    Long getIssuerCertificateUserIdByRequestId(Long requestId);
 }
