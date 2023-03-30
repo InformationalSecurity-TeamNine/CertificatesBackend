@@ -28,4 +28,7 @@ public class CertificateRequest implements Serializable {
     @Column
     private CertificateType certificateType;
 
+
+    private String keyUsageFlags;
+
 }

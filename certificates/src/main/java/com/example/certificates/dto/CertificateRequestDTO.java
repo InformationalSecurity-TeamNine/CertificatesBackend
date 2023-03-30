@@ -11,6 +11,7 @@ import lombok.Setter;
 import org.springframework.lang.Nullable;
 
 import javax.persistence.*;
+import java.time.LocalDateTime;
 import java.util.Date;
 
 @Getter
@@ -21,19 +22,18 @@ public class CertificateRequestDTO {
 
     private Long id;
 
-    Date validTo;
+    private LocalDateTime validTo;
 
-    String issuerSN;
+    private String issuerSN;
 
-    String username;
+    private String username;
 
-    private CertificateType certificateType;
+    private String keyUsageFlags;
 
     public CertificateRequestDTO(CertificateRequest certificateRequest){
         this.id = certificateRequest.getId();
         this.username = certificateRequest.getIssuer().getEmail();
         this.issuerSN = certificateRequest.getParentCertificate().getId().toString();
-        this.certificateType = certificateRequest.getCertificateType();
-
+        this.keyUsageFlags = certificateRequest.getKeyUsageFlags();
     }
 }

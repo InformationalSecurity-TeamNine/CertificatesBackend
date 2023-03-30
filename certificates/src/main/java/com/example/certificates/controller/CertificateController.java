@@ -17,6 +17,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
+import java.util.List;
 import java.util.Map;
 
 @CrossOrigin
@@ -31,18 +32,26 @@ public class CertificateController {
         this.certificateService = certificateService;
     }
     @GetMapping
-    public ResponseEntity<Paginated<CertificateDTO>> getCertificates(){
+    public ResponseEntity<List<CertificateDTO>> getCertificates(){
 
-        Paginated<CertificateDTO> allCertificates = this.certificateService.getAll();
+        List<CertificateDTO> allCertificates = this.certificateService.getAll();
         return new ResponseEntity<>(allCertificates, HttpStatus.OK);
     }
 
     @GetMapping(value = "/past-requests/")
-    public ResponseEntity<Paginated<CertificateDTO>> getPastCertificates(
+    public ResponseEntity<List<CertificateDTO>> getPastCertificates(
             @RequestHeader Map<String, String> headers){
 
-        Paginated<CertificateDTO> allCertificates = this.certificateService.getPastCertificates(headers);
+        List<CertificateDTO> allCertificates = this.certificateService.getPastRequests(headers);
         return new ResponseEntity<>(allCertificates, HttpStatus.OK);
+    }
+
+    @GetMapping(value = "/valid/{serial-number}")
+    public ResponseEntity<Boolean> getCertificateValidation(
+            @PathVariable("serial-number")String serialNumber){
+
+        boolean isValid = this.certificateService.isValid(serialNumber);
+        return new ResponseEntity<>(isValid, HttpStatus.OK);
     }
 
     @PutMapping(value = "/accept-request/{id}")

@@ -1,7 +1,6 @@
 package com.example.certificates.security;
 
-import com.example.certificates.exceptions.InvalidRepeatPasswordException;
-import com.example.certificates.exceptions.UserAlreadyExistsException;
+import com.example.certificates.exceptions.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.AuthenticationException;
@@ -49,6 +48,7 @@ public class ValidationHandler {
     {
         return new ErrorResponse(ex.getMessage());
     }
+
     @ExceptionHandler(value
             = InvalidRepeatPasswordException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
@@ -58,8 +58,53 @@ public class ValidationHandler {
         return new ErrorResponse(ex.getMessage());
     }
 
+    @ExceptionHandler(value
+            = EndIssuerException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public @ResponseBody ErrorResponse
+    handleEndIssuerException(EndIssuerException ex)
+    {
+        return new ErrorResponse(ex.getMessage());
+    }
+
+    @ExceptionHandler(value
+            = InvalidCertificateEndDateException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public @ResponseBody ErrorResponse
+    handleInvalidCertificateEndDateException(InvalidCertificateEndDateException ex)
+    {
+        return new ErrorResponse(ex.getMessage());
+    }
+
+    @ExceptionHandler(value
+            = InvalidIssuerException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public @ResponseBody ErrorResponse
+    handleInvalidIssuerException(InvalidIssuerException ex)
+    {
+        return new ErrorResponse(ex.getMessage());
+    }
+
+    @ExceptionHandler(value
+            = NonExistingCertificateException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public @ResponseBody ErrorResponse
+    handleNonExistingCertificateException(NonExistingCertificateException ex)
+    {
+        return new ErrorResponse(ex.getMessage());
+    }
+
+
+
+
+
+
+
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<?> handleAccessDeniedException(Exception ex, WebRequest request) {
         return new ResponseEntity("Access Denied", HttpStatus.FORBIDDEN);
     }
+
+
+
 }
