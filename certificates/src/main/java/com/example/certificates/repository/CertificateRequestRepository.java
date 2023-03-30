@@ -12,11 +12,11 @@ import java.util.List;
 @Repository
 public interface CertificateRequestRepository extends JpaRepository<CertificateRequest, Long> {
 
-    @Query("select new com.example.certificates.dto.CertificateRequestResponse(c.id, c.parentCertificate.serialNumber, c.issuer.email, c.keyUsageFlags, c.status, c.certificateType)" +
+    @Query("select new com.example.certificates.dto.CertificateRequestResponse(c.id, c.parentCertificate.serialNumber, c.issuer.email,  c.status, c.certificateType)" +
             " from CertificateRequest c ")
     List<CertificateRequestResponse> getAllRequests();
 
-    @Query("select new com.example.certificates.dto.CertificateRequestResponse(c.id, c.parentCertificate.serialNumber, c.issuer.email, c.keyUsageFlags, c.status, c.certificateType)" +
+    @Query("select new com.example.certificates.dto.CertificateRequestResponse(c.id, c.parentCertificate.serialNumber, c.issuer.email,  c.status, c.certificateType)" +
             " from CertificateRequest c where c.issuer.id=:userId")
     List<CertificateRequestResponse> getRequestFromUser(Integer userId);
 

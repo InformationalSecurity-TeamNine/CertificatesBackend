@@ -19,8 +19,6 @@ public class CertificateRequestResponse {
 
     private String username;
 
-    private String keyUsageFlags;
-
     private RequestStatus status;
 
     private CertificateType type;
