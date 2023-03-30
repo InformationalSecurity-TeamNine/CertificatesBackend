@@ -1,5 +1,6 @@
 package com.example.certificates.dto;
 
+import com.example.certificates.enums.CertificateType;
 import com.example.certificates.enums.RequestStatus;
 import lombok.*;
 
@@ -22,4 +23,5 @@ public class CertificateRequestResponse {
 
     private RequestStatus status;
 
+    private CertificateType type;
 }

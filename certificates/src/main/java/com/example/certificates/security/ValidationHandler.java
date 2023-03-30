@@ -95,7 +95,14 @@ public class ValidationHandler {
     }
 
 
-
+    @ExceptionHandler(value
+            = InvalidCertificateTypeException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public @ResponseBody ErrorResponse
+    handleInvalidCertificateTypeException(InvalidCertificateTypeException ex)
+    {
+        return new ErrorResponse(ex.getMessage());
+    }
 
 
 

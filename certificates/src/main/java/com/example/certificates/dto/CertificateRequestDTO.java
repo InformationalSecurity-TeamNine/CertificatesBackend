@@ -28,7 +28,7 @@ public class CertificateRequestDTO {
 
     private String username;
 
-    private String keyUsageFlags;
+    private String type;
 
 
 
@@ -36,6 +36,5 @@ public class CertificateRequestDTO {
         this.id = certificateRequest.getId();
         this.username = certificateRequest.getIssuer().getEmail();
         this.issuerSN = certificateRequest.getParentCertificate().getId().toString();
-        this.keyUsageFlags = certificateRequest.getKeyUsageFlags();
     }
 }

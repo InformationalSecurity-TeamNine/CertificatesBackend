@@ -4,14 +4,13 @@ import com.example.certificates.dto.*;
 
 import com.example.certificates.enums.CertificateStatus;
 import com.example.certificates.enums.CertificateType;
-import com.example.certificates.exceptions.EndIssuerException;
-import com.example.certificates.exceptions.InvalidCertificateEndDateException;
-import com.example.certificates.exceptions.InvalidIssuerException;
-import com.example.certificates.exceptions.NonExistingCertificateException;
+import com.example.certificates.enums.RequestStatus;
+import com.example.certificates.exceptions.*;
 import com.example.certificates.model.Certificate;
 import com.example.certificates.model.CertificateRequest;
 import com.example.certificates.repository.CertificateRepository;
 import com.example.certificates.repository.CertificateRequestRepository;
+import com.example.certificates.repository.UserRepository;
 import com.example.certificates.security.UserRequestValidation;
 import com.example.certificates.service.interfaces.ICertificateService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,10 +22,11 @@ import java.util.Map;
 
 @Service
 public class CertificateService implements ICertificateService {
-
+    private boolean isAuthority;
     private final CertificateRepository certificateRepository;
     private final CertificateRequestRepository certificateRequestRepository;
 
+    private final UserRepository userRepository;
     private final UserRequestValidation userRequestValidation;
 
     /*
@@ -39,9 +39,10 @@ public class CertificateService implements ICertificateService {
         *
         * */
     @Autowired
-    public CertificateService(CertificateRepository certificateRepository, CertificateRequestRepository certificateRequestRepository, UserRequestValidation userRequestValidation){
+    public CertificateService(CertificateRepository certificateRepository, CertificateRequestRepository certificateRequestRepository, UserRepository userRepository, UserRequestValidation userRequestValidation){
         this.certificateRepository = certificateRepository;
         this.certificateRequestRepository = certificateRequestRepository;
+        this.userRepository = userRepository;
         this.userRequestValidation = userRequestValidation;
     }
 
@@ -73,10 +74,16 @@ public class CertificateService implements ICertificateService {
         validateIssuerEndCertificate(certificateRequest, issuer);
         validateCertificateEndDate(certificateRequest, issuer);
 
+        CertificateRequest request = new CertificateRequest();
+        request.setIssuer(this.userRepository.findById(Long.valueOf(userId)).get());
+        request.setStatus(RequestStatus.PENDING);
+        request.setParentCertificate(issuer);
+
 
         if(role.equalsIgnoreCase("admin")){
 
-            CertificateRequest request = new CertificateRequest();
+
+
 
             /*
             * Svaki autentifikovani korisnik
@@ -106,13 +113,25 @@ public class CertificateService implements ICertificateService {
 
             return null;
         }
+
+
+        if(certificateRequest.getType().toString().equalsIgnoreCase(CertificateType.ROOT.toString())){
+            throw new InvalidCertificateTypeException("Cannot create root certificate as a default user");
+        }
+
         validateIssuer(certificateRequest);
+        request.setCertificateType(CertificateType.valueOf(certificateRequest.getType()));
 
 
-        return null;
+        CertificateRequest newRequest = this.certificateRequestRepository.save(request);
 
+        if(issuer.getUser().getId() == userId.longValue()){
+            this.acceptRequest(newRequest.getId(), authHeader);
+        }
 
+        newRequest.setStatus(RequestStatus.ACCEPTED);
 
+        return newRequest;
     }
     @Override
     public boolean isValid(String serialNumber){
@@ -169,6 +188,7 @@ public class CertificateService implements ICertificateService {
                         CertificateType.INTERMEDIATE, null);
         return acceptRequestDTO;
     }
+
 
 
 }
