@@ -35,6 +35,8 @@ public class Certificate implements Serializable {
 
     private LocalDateTime validTo;
 
+    private String publicKey;
+
     @Enumerated(EnumType.STRING)
     @Column
     private CertificateStatus status;

@@ -55,10 +55,10 @@ public class CertificateController {
     }
 
     @PutMapping(value = "/accept-request/{id}")
-    public ResponseEntity<AcceptRequestDTO> acceptRequest(@PathVariable Long id,
+    public ResponseEntity<String> acceptRequest(@PathVariable Long id,
                                                           @RequestHeader Map<String, String> headers){
 
-        AcceptRequestDTO acceptRequest = this.certificateService.acceptRequest(id, headers);
+        String acceptRequest = this.certificateService.acceptRequest(id, headers);
 
         return new ResponseEntity<>(acceptRequest, HttpStatus.OK);
     }

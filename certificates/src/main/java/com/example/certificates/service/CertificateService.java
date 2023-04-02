@@ -12,10 +12,12 @@ import com.example.certificates.repository.CertificateRepository;
 import com.example.certificates.repository.CertificateRequestRepository;
 import com.example.certificates.repository.UserRepository;
 import com.example.certificates.security.UserRequestValidation;
+import com.example.certificates.service.interfaces.ICertificateGeneratorService;
 import com.example.certificates.service.interfaces.ICertificateService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.security.KeyPair;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
@@ -23,28 +25,20 @@ import java.util.Optional;
 
 @Service
 public class CertificateService implements ICertificateService {
-    private boolean isAuthority;
     private final CertificateRepository certificateRepository;
     private final CertificateRequestRepository certificateRequestRepository;
-
     private final UserRepository userRepository;
     private final UserRequestValidation userRequestValidation;
+    private final ICertificateGeneratorService certificateGeneratorService;
 
-    /*
-        *
-        * String role = this.userRequestValidation.getRoleFromToken(headers);
-        if(role.equalsIgnoreCase("driver")){
-            boolean areIdsEqual = this.userRequestValidation.areIdsEqual(headers, driverId);
-            if(!areIdsEqual) return new ResponseEntity("Driver does not exist!", HttpStatus.NOT_FOUND);
-        }
-        *
-        * */
+
     @Autowired
-    public CertificateService(CertificateRepository certificateRepository, CertificateRequestRepository certificateRequestRepository, UserRepository userRepository, UserRequestValidation userRequestValidation){
+    public CertificateService(CertificateRepository certificateRepository, CertificateRequestRepository certificateRequestRepository, UserRepository userRepository, UserRequestValidation userRequestValidation, ICertificateGeneratorService certificateGeneratorService){
         this.certificateRepository = certificateRepository;
         this.certificateRequestRepository = certificateRequestRepository;
         this.userRepository = userRepository;
         this.userRequestValidation = userRequestValidation;
+        this.certificateGeneratorService = certificateGeneratorService;
     }
 
     @Override
@@ -84,55 +78,22 @@ public class CertificateService implements ICertificateService {
 
         if(role.equalsIgnoreCase("admin")){
 
-
-
-
-            /*
-            * Svaki autentifikovani korisnik
-            * ima mogućnost da napravi
-            * zahteva za izdavanje sertifikata.
-            * Korisnik može da zahteva
-            * samo intermediate ili end
-            * sertifikate, dok admin
-            * može da zahteva i root sertifikat.
-            *  Zahtev se prosleđuje onom korisniku
-            *  koji je vlasnik sertifikata koji
-            *  treba da potpiše sertifikat za
-            * koji je podnet zahtev. Ako se
-            * sertifikat izdaje na osnovu
-            * sertifikata čiji je isti korisnik i
-            * vlasnik, zahtev se automatski
-            * odobrava. Ako se sertifikat izdaje
-            *  na osnovu root sertifikata same
-            *  aplikacije, admin mora da odobri
-            * sertifikat. Ako admin zahteva da se
-            *  napravi neki sertifikat na osnovu nekog
-            * drugog sertifikata ili ako je to novi root
-            * sertifikat, zahtev se automatski odobrava. (3 boda)
-
-             *
-            * */
-
-            return null;
+            validateIssuer(certificateRequest);
+            request.setCertificateType(CertificateType.valueOf(certificateRequest.getType()));
+            CertificateRequest newRequest = this.certificateRequestRepository.save(request);
+            this.acceptRequest(newRequest.getId(), authHeader);
+            newRequest.setStatus(RequestStatus.ACCEPTED);
+            return newRequest;
         }
-
-
         if(certificateRequest.getType().toString().equalsIgnoreCase(CertificateType.ROOT.toString())){
             throw new InvalidCertificateTypeException("Cannot create root certificate as a default user");
         }
-
         validateIssuer(certificateRequest);
         request.setCertificateType(CertificateType.valueOf(certificateRequest.getType()));
-
-
         CertificateRequest newRequest = this.certificateRequestRepository.save(request);
-
         if(issuer.getUser().getId() == userId.longValue()){
             this.acceptRequest(newRequest.getId(), authHeader);
         }
-
-        newRequest.setStatus(RequestStatus.ACCEPTED);
-
         return newRequest;
     }
     @Override
@@ -187,6 +148,10 @@ public class CertificateService implements ICertificateService {
             throw new NonExistingRequestException("The request with the given id doesn't exist");
         }
 
+        if (request.get().getStatus()!=RequestStatus.PENDING){
+            throw new RequestAlreadyProcessedException("The request has already been processed");
+        }
+
         request.get().setStatus(RequestStatus.DECLINED);
         request.get().setReason(declineReason);
         DeclineRequestDTO declineRequestDTO = new DeclineRequestDTO(request.get().getId(), declineReason);
@@ -197,13 +162,25 @@ public class CertificateService implements ICertificateService {
     }
 
     @Override
-    public AcceptRequestDTO acceptRequest(Long id, Map<String, String> authHeader) {
-        AcceptRequestDTO acceptRequestDTO =
-                new AcceptRequestDTO(LocalDateTime.now(),
-                        LocalDateTime.now().plusMonths(3),
-                        CertificateType.INTERMEDIATE, null);
-        return acceptRequestDTO;
+    public String acceptRequest(Long id, Map<String, String> authHeader) {
+
+        Integer userId = this.userRequestValidation.getUserId(authHeader);
+        Optional<CertificateRequest> request = this.certificateRequestRepository.findById(id);
+        if(request.isEmpty()) throw new NonExistingRequestException("The request with the given id doesn't exist");
+        if(userId.longValue() != this.certificateRequestRepository.getIssuerCertificateUserIdByRequestId(request.get().getId())){
+            throw new NonExistingRequestException("The request with the given id doesn't exist");
+        }
+        if (request.get().getStatus()!=RequestStatus.PENDING){
+            throw new RequestAlreadyProcessedException("The request has already been processed");
+        }
+        request.get().setStatus(RequestStatus.ACCEPTED);
+        KeyPair keyPair = certificateGeneratorService.generateKeyPair();
+        Certificate certificate = this.certificateGeneratorService.createCertificate(request.get(), keyPair);
+        this.certificateRequestRepository.save(request.get());
+        return "Request accepted";
     }
+
+
 
 
 

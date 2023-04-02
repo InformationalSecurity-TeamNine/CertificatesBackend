@@ -19,7 +19,7 @@ public interface ICertificateService {
 
     DeclineRequestDTO declineRequest(Long id, String declineReason, Map<String, String> authHeader);
 
-    AcceptRequestDTO acceptRequest(Long id, Map<String, String> authHeader);
+    String acceptRequest(Long id, Map<String, String> authHeader);
 
     boolean isValid(String serialNumber);
 

@@ -50,6 +50,15 @@ public class ValidationHandler {
     }
 
     @ExceptionHandler(value
+            = RequestAlreadyProcessedException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public @ResponseBody ErrorResponse
+    handleRequestAlreadyProcessedException(RequestAlreadyProcessedException ex)
+    {
+        return new ErrorResponse(ex.getMessage());
+    }
+
+    @ExceptionHandler(value
             = InvalidRepeatPasswordException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public @ResponseBody ErrorResponse
@@ -87,7 +96,7 @@ public class ValidationHandler {
 
     @ExceptionHandler(value
             = NonExistingCertificateException.class)
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
     public @ResponseBody ErrorResponse
     handleNonExistingCertificateException(NonExistingCertificateException ex)
     {
@@ -107,7 +116,7 @@ public class ValidationHandler {
 
     @ExceptionHandler(value
             = NonExistingRequestException.class)
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
     public @ResponseBody ErrorResponse
     handleNonExistingRequestException(NonExistingRequestException ex)
     {
