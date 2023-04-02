@@ -63,8 +63,10 @@ public class CertificateService implements ICertificateService {
 
         String role = this.userRequestValidation.getRoleFromToken(authHeader);
         Integer userId = this.userRequestValidation.getUserId(authHeader);
-
-        Certificate issuer = this.certificateRepository.findByIssuerSN(certificateRequest.getIssuerSN());
+        Certificate issuer = null;
+        if (certificateRequest.getIssuerSN() != null){
+            issuer = this.certificateRepository.findByIssuerSN(certificateRequest.getIssuerSN());
+        }
         if (issuer != null){
             issuer.setUser(this.certificateRepository.getUserByCertificateId(issuer.getId()));
             validateIssuerEndCertificate(certificateRequest, issuer);
@@ -169,9 +171,13 @@ public class CertificateService implements ICertificateService {
         Integer userId = this.userRequestValidation.getUserId(authHeader);
         Optional<CertificateRequest> request = this.certificateRequestRepository.findById(id);
         if(request.isEmpty()) throw new NonExistingRequestException("The request with the given id doesn't exist");
-        if(userId.longValue() != this.certificateRequestRepository.getIssuerCertificateUserIdByRequestId(request.get().getId())){
-            throw new NonExistingRequestException("The request with the given id doesn't exist");
+
+        if (request.get().getCertificateType()!=CertificateType.ROOT){
+            if (userId.longValue() != this.certificateRequestRepository.getIssuerCertificateUserIdByRequestId(request.get().getId())) {
+                throw new NonExistingRequestException("The request with the given id doesn't exist");
+            }
         }
+
         if (request.get().getStatus()!=RequestStatus.PENDING){
             throw new RequestAlreadyProcessedException("The request has already been processed");
         }

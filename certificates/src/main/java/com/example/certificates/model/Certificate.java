@@ -26,7 +26,7 @@ public class Certificate implements Serializable {
 
     @ManyToOne(cascade = {CascadeType.REFRESH}, fetch = FetchType.LAZY)
     private Certificate issuingCertificate;
-
+    @Lob
     private String serialNumber;
 
     private String signatureAlgorithm;
@@ -34,7 +34,7 @@ public class Certificate implements Serializable {
     private LocalDateTime validFrom;
 
     private LocalDateTime validTo;
-
+    @Lob
     private String publicKey;
 
     @Enumerated(EnumType.STRING)

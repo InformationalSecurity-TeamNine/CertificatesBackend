@@ -3,11 +3,10 @@ package com.example.certificates.service;
 import com.example.certificates.enums.CertificateStatus;
 import com.example.certificates.enums.CertificateType;
 import com.example.certificates.exceptions.InvalidCertificateEndDateException;
+import com.example.certificates.model.*;
 import com.example.certificates.model.Certificate;
-import com.example.certificates.model.CertificateRequest;
-import com.example.certificates.model.IssuerData;
-import com.example.certificates.model.SubjectData;
 import com.example.certificates.repository.CertificateRepository;
+import com.example.certificates.repository.UserRepository;
 import com.example.certificates.service.interfaces.ICertificateGeneratorService;
 import org.bouncycastle.asn1.pkcs.PrivateKeyInfo;
 import org.bouncycastle.asn1.x500.X500NameBuilder;
@@ -44,10 +43,12 @@ import java.util.UUID;
 @Service
 public class CertificateGeneratorService implements ICertificateGeneratorService {
     private final CertificateRepository certificateRepository;
+    private final UserRepository userRepository;
 
     @Autowired
-    public CertificateGeneratorService(CertificateRepository certificateRepository) {
+    public CertificateGeneratorService(CertificateRepository certificateRepository, UserRepository userRepository) {
         this.certificateRepository = certificateRepository;
+        this.userRepository = userRepository;
     }
 
     @Override
@@ -72,16 +73,14 @@ public class CertificateGeneratorService implements ICertificateGeneratorService
             }
             return newDate;
         }
-        else if (type == CertificateType.INTERMEDIATE) {
+        else {
             LocalDateTime newDate = parentCertificateEndDate.plusDays(-5);
             if(newDate.isBefore(LocalDateTime.now())) {
                 throw new InvalidCertificateEndDateException("Parent certificate is ending soon, can't create!");
             }
             return newDate;
         }
-        else{
-            return LocalDateTime.now().plusYears(1);
-        }
+
 
     }
 
@@ -89,19 +88,24 @@ public class CertificateGeneratorService implements ICertificateGeneratorService
     public Certificate createCertificate(CertificateRequest certificateRequest, KeyPair keyPair) {
         Certificate certificate = new Certificate();
         certificate.setValidFrom(LocalDateTime.now());
-        certificate.setValidTo(getExpirationDate(certificateRequest.getParentCertificate().getValidTo(), certificateRequest.getCertificateType()));
+        if (certificateRequest.getCertificateType() == CertificateType.ROOT){
+            certificate.setValidTo(LocalDateTime.now().plusYears(3));
+        }else {
+            certificate.setValidTo(getExpirationDate(certificateRequest.getParentCertificate().getValidTo(), certificateRequest.getCertificateType()));
+        }
         certificate.setSerialNumber(UUID.randomUUID().toString());
         certificate.setPublicKey(Base64.toBase64String(keyPair.getPublic().getEncoded()));
         if (certificate.getType()!= CertificateType.ROOT) {
-            certificate.setIssuingCertificate(certificate.getIssuingCertificate());
+            certificate.setIssuingCertificate(certificateRequest.getParentCertificate());
         }
         else certificate.setIssuingCertificate(null);
-        certificate.setUser(certificateRequest.getIssuer());
+        User user = this.userRepository.findByRequestId(certificateRequest.getId());
+        certificate.setUser(user);
         certificate.setStatus(CertificateStatus.VALID);
         certificate.setType(certificateRequest.getCertificateType());
         certificate.setSignatureAlgorithm("SHA256WithRSAEncryption");
         SubjectData subjectData = generateSubjectData(certificate);
-        IssuerData issuerData = generateIssuerData(certificate, keyPair);
+        IssuerData issuerData  = generateIssuerData(certificate, keyPair);
         X509Certificate newCertificate = generateCertificate(subjectData, issuerData);
         certificate = this.certificateRepository.save(certificate);
         saveCertificate(newCertificate);
@@ -114,9 +118,10 @@ public class CertificateGeneratorService implements ICertificateGeneratorService
             JcaContentSignerBuilder builder = new JcaContentSignerBuilder("SHA256WithRSAEncryption");
             builder = builder.setProvider("BC");
             ContentSigner contentSigner = builder.build(issuerData.getPrivateKey());
+
             X509v3CertificateBuilder certGen = new JcaX509v3CertificateBuilder(
                     issuerData.getX500name(),
-                    new BigInteger(subjectData.getSerialNumber()),
+                    new BigInteger(subjectData.getSerialNumber().replace("-", ""), 16),
                     Date.from(subjectData.getStartDate().atStartOfDay(ZoneId.systemDefault()).toInstant()),
                     Date.from(subjectData.getEndDate().atStartOfDay(ZoneId.systemDefault()).toInstant()),
                     subjectData.getX500name(),
@@ -143,12 +148,17 @@ public class CertificateGeneratorService implements ICertificateGeneratorService
     private IssuerData generateIssuerData(Certificate certificate, KeyPair keyPair){
         PrivateKey issuerKey;
         X500NameBuilder builder = new X500NameBuilder(BCStyle.INSTANCE);
-        builder.addRDN(BCStyle.CN, certificate.getIssuingCertificate().getUser().getEmail());
-        builder.addRDN(BCStyle.SURNAME, certificate.getIssuingCertificate().getUser().getSurname());
-        builder.addRDN(BCStyle.GIVENNAME, certificate.getIssuingCertificate().getUser().getName());
-        builder.addRDN(BCStyle.UID, String.valueOf(certificate.getIssuingCertificate().getUser().getId()));
-
-        if (Objects.equals(certificate.getUser().getId(), certificate.getIssuingCertificate().getUser().getId())) {
+        if (certificate.getType()!=CertificateType.ROOT) {
+            builder.addRDN(BCStyle.CN, certificate.getIssuingCertificate().getUser().getEmail());
+            builder.addRDN(BCStyle.SURNAME, certificate.getIssuingCertificate().getUser().getSurname());
+            builder.addRDN(BCStyle.GIVENNAME, certificate.getIssuingCertificate().getUser().getName());
+            builder.addRDN(BCStyle.UID, String.valueOf(certificate.getIssuingCertificate().getUser().getId()));
+        }
+        if (certificate.getType() == CertificateType.ROOT)
+        {
+            issuerKey = keyPair.getPrivate();
+        }
+        else if (Objects.equals(certificate.getUser().getId(), certificate.getIssuingCertificate().getUser().getId())) {
             issuerKey = keyPair.getPrivate();
         } else {
             issuerKey = getPrivateKey(certificate.getIssuingCertificate().getSerialNumber());

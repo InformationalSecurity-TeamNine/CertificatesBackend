@@ -35,6 +35,12 @@ public class CertificateRequestDTO {
     public CertificateRequestDTO(CertificateRequest certificateRequest){
         this.id = certificateRequest.getId();
         this.username = certificateRequest.getIssuer().getEmail();
-        this.issuerSN = certificateRequest.getParentCertificate().getId().toString();
+        if(certificateRequest.getParentCertificate() == null){
+            this.issuerSN = "no issuer";
+        }else{
+            this.issuerSN = certificateRequest.getParentCertificate().getId().toString();
+        }
+        this.type = certificateRequest.getCertificateType().toString();
+
     }
 }

@@ -43,8 +43,7 @@ public class User implements Serializable {
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
     private LocalDateTime lastTimePasswordChanged;
 
-    @OneToMany(cascade = {CascadeType.REFRESH}, fetch = FetchType.LAZY)
-    private List<Certificate> certificates;
+
 
 
 }

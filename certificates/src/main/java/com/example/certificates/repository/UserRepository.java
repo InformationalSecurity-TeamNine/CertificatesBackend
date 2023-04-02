@@ -16,4 +16,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     @Query("select u from User u where u.email=:email and u.isEmailConfirmed=true")
     Optional<User> isEmailConfirmed(String email);
+
+    @Query("select u from User u inner join CertificateRequest cr on u.id=cr.issuer.id where u.id=:id")
+    User findByRequestId(Long id);
 }
