@@ -65,11 +65,11 @@ public class CertificateService implements ICertificateService {
         Integer userId = this.userRequestValidation.getUserId(authHeader);
 
         Certificate issuer = this.certificateRepository.findByIssuerSN(certificateRequest.getIssuerSN());
-        issuer.setUser(this.certificateRepository.getUserByCertificateId(issuer.getId()));
-
-        validateIssuerEndCertificate(certificateRequest, issuer);
-        validateCertificateEndDate(certificateRequest, issuer);
-
+        if (issuer != null){
+            issuer.setUser(this.certificateRepository.getUserByCertificateId(issuer.getId()));
+            validateIssuerEndCertificate(certificateRequest, issuer);
+            validateCertificateEndDate(certificateRequest, issuer);
+        }
         CertificateRequest request = new CertificateRequest();
         request.setIssuer(this.userRepository.findById(Long.valueOf(userId)).get());
         request.setStatus(RequestStatus.PENDING);
@@ -78,7 +78,9 @@ public class CertificateService implements ICertificateService {
 
         if(role.equalsIgnoreCase("admin")){
 
-            validateIssuer(certificateRequest);
+            if (issuer!=null){
+                validateIssuer(certificateRequest);
+            }
             request.setCertificateType(CertificateType.valueOf(certificateRequest.getType()));
             CertificateRequest newRequest = this.certificateRequestRepository.save(request);
             this.acceptRequest(newRequest.getId(), authHeader);
