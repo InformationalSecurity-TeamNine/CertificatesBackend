@@ -60,7 +60,7 @@ public class CertificateService implements ICertificateService {
             return this.certificateRequestRepository.getAllRequests();
         }
         Integer userId = this.userRequestValidation.getUserId(authHeader);
-        return this.certificateRequestRepository.getRequestFromUser(userId);
+        return this.certificateRequestRepository.getRequestFromUser(userId.longValue());
 
     }
 
