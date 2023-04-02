@@ -16,7 +16,7 @@ public interface CertificateRepository extends JpaRepository<Certificate, Long> 
     Certificate findByIssuerSN(String issuerSN);
 
     @Query("select new com.example.certificates.dto.CertificateDTO(c.id, c.validFrom, u, c.type, c.serialNumber)" +
-            " from Certificate c inner join User u where c.user.id=u.id")
+            " from Certificate c inner join User u on c.user.id=u.id")
     List<CertificateDTO> getAllCertificates();
 
 
