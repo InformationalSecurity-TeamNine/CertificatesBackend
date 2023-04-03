@@ -85,15 +85,20 @@ public class CertificateGeneratorService implements ICertificateGeneratorService
     public Certificate createCertificate(CertificateRequest certificateRequest, KeyPair keyPair) {
         Certificate certificate = new Certificate();
         certificate.setValidFrom(LocalDateTime.now());
+        Certificate parentCertificate = null;
         if (certificateRequest.getCertificateType() == CertificateType.ROOT){
             certificate.setValidTo(LocalDateTime.now().plusYears(3));
         }else {
-            certificate.setValidTo(getExpirationDate(certificateRequest.getParentCertificate().getValidTo(), certificateRequest.getCertificateType()));
+            parentCertificate = this.certificateRepository.getParentCertificateByRequestId(certificateRequest.getId());
+            User parentIssuer = this.userRepository.getByCertificateId(parentCertificate.getId());
+            parentCertificate.setUser(parentIssuer);
+            certificate.setIssuingCertificate(parentCertificate);
+            certificate.setValidTo(getExpirationDate(parentCertificate.getValidTo(), certificateRequest.getCertificateType()));
         }
         certificate.setSerialNumber(UUID.randomUUID().toString());
         certificate.setPublicKey(Base64.toBase64String(keyPair.getPublic().getEncoded()));
         if (certificate.getType()!= CertificateType.ROOT) {
-            certificate.setIssuingCertificate(certificateRequest.getParentCertificate());
+            certificate.setIssuingCertificate(parentCertificate);
         }
         else certificate.setIssuingCertificate(null);
         User user = this.userRepository.findByRequestId(certificateRequest.getId());
@@ -165,7 +170,7 @@ public class CertificateGeneratorService implements ICertificateGeneratorService
 
     private void savePrivateKey(X509Certificate certificate,KeyPair keyPair){
         try {
-            JcaPEMWriter pemWriter = new JcaPEMWriter(new FileWriter("keys/" + certificate.getSerialNumber().toString() + ".key"));
+            JcaPEMWriter pemWriter = new JcaPEMWriter(new FileWriter("keys/" + certificate.getSerialNumber() + ".key"));
             pemWriter.writeObject(keyPair.getPrivate());
             pemWriter.close();
         } catch (IOException e) {
@@ -176,7 +181,7 @@ public class CertificateGeneratorService implements ICertificateGeneratorService
     private void saveCertificate(X509Certificate certificate){
         try {
             X509CertificateHolder certHolder = new JcaX509CertificateHolder(certificate);
-            FileOutputStream fos = new FileOutputStream("certs/" + certificate.getSerialNumber().toString() + ".crt");
+            FileOutputStream fos = new FileOutputStream("certs/" + certificate.getSerialNumber() + ".crt");
             fos.write(certHolder.getEncoded());
             fos.close();
         } catch (CertificateEncodingException | IOException e) {
@@ -186,7 +191,7 @@ public class CertificateGeneratorService implements ICertificateGeneratorService
     public PrivateKey getPrivateKey(String certificateSN) {
         try {
 
-            File keyFile = new File("keys/" + certificateSN + ".key");
+            File keyFile = new File("keys/" + new BigInteger(certificateSN.replace("-", ""), 16) + ".key");
             PEMParser pemParser = new PEMParser(new FileReader(keyFile));
             Object obj = pemParser.readObject();
             pemParser.close();

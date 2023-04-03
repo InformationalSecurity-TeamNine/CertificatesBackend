@@ -17,6 +17,7 @@ import com.example.certificates.service.interfaces.ICertificateService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.math.BigInteger;
 import java.security.KeyPair;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -70,8 +71,9 @@ public class CertificateService implements ICertificateService {
         String role = this.userRequestValidation.getRoleFromToken(authHeader);
         Integer userId = this.userRequestValidation.getUserId(authHeader);
         Certificate issuer = null;
-        if (certificateRequest.getIssuerSN() != null){
+        if (!certificateRequest.getIssuerSN().isEmpty()){
             issuer = this.certificateRepository.findByIssuerSN(certificateRequest.getIssuerSN());
+
         }
         if (issuer != null){
             issuer.setUser(this.certificateRepository.getUserByCertificateId(issuer.getId()));
@@ -125,7 +127,7 @@ public class CertificateService implements ICertificateService {
     }
 
     private boolean isExpired(Certificate certificate){
-        return certificate.getValidTo().isBefore(LocalDateTime.now());
+        return  certificate.getValidTo().isBefore(LocalDateTime.now());
     }
 
 
@@ -183,9 +185,9 @@ public class CertificateService implements ICertificateService {
         if (request.get().getStatus()!=RequestStatus.PENDING){
             throw new RequestAlreadyProcessedException("The request has already been processed");
         }
-        request.get().setStatus(RequestStatus.ACCEPTED);
         KeyPair keyPair = certificateGeneratorService.generateKeyPair();
-        Certificate certificate = this.certificateGeneratorService.createCertificate(request.get(), keyPair);
+        this.certificateGeneratorService.createCertificate(request.get(), keyPair);
+        request.get().setStatus(RequestStatus.ACCEPTED);
         this.certificateRequestRepository.save(request.get());
         return "Request accepted";
     }

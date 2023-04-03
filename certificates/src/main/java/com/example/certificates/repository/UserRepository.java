@@ -19,4 +19,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     @Query("select u from User u inner join CertificateRequest cr on u.id=cr.issuer.id where cr.id=:id")
     User findByRequestId(Long id);
+
+    @Query("select u from User u inner join Certificate c on u.id=c.user.id where c.id=:id")
+    User getByCertificateId(Long id);
 }
