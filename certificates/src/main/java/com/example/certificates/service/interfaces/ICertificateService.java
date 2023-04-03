@@ -21,6 +21,6 @@ public interface ICertificateService {
 
     String acceptRequest(Long id, Map<String, String> authHeader);
 
-    boolean isValid(String serialNumber);
+    boolean isValid(Long id);
 
 }

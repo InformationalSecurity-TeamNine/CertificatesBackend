@@ -106,14 +106,16 @@ public class CertificateService implements ICertificateService {
         }
         return newRequest;
     }
+
     @Override
-    public boolean isValid(String serialNumber){
-        Certificate certificate = certificateRepository.findByIssuerSN(serialNumber);
-        if(certificate == null)
+    public boolean isValid(Long id){
+
+        Optional<Certificate> certificate = certificateRepository.findById(id);
+        if(certificate.isEmpty())
             throw new NonExistingCertificateException("Certificate with the given serial number does not exist.");
 
-        if(isExpired(certificate)) return false;
-        if(isWithdrawn(certificate)) return false;
+        if(isExpired(certificate.get())) return false;
+        if(isWithdrawn(certificate.get())) return false;
 
         return true;
     }
