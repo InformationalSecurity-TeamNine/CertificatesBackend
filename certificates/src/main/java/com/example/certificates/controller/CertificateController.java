@@ -1,6 +1,7 @@
 package com.example.certificates.controller;
 
 import com.example.certificates.dto.*;
+import com.example.certificates.enums.CertificateType;
 import com.example.certificates.model.CertificateRequest;
 
 import com.example.certificates.dto.AcceptRequestDTO;
@@ -19,6 +20,7 @@ import org.springframework.web.bind.annotation.*;
 import javax.validation.Valid;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 @CrossOrigin
 @RestController
@@ -77,7 +79,16 @@ public class CertificateController {
     public ResponseEntity<CertificateRequestDTO> create(
             @Valid @RequestBody CertificateRequestDTO certificateRequest,
             @RequestHeader Map<String, String> headers) {
-
+        if (!Objects.equals(certificateRequest.getType(), CertificateType.END.toString())
+                && !Objects.equals(certificateRequest.getType(), CertificateType.INTERMEDIATE.toString())
+                && !Objects.equals(certificateRequest.getType(), CertificateType.ROOT.toString())){
+            return new ResponseEntity("Bad request body", HttpStatus.BAD_REQUEST);
+        }
+        if (Objects.equals(certificateRequest.getType(), CertificateType.END.toString()) || Objects.equals(certificateRequest.getType(), CertificateType.INTERMEDIATE.toString())){
+            if(certificateRequest.getIssuerSN().isEmpty()){
+                return new ResponseEntity("Bad request body", HttpStatus.BAD_REQUEST);
+            }
+        }
         CertificateRequest newRequest = this.certificateService.createRequest(certificateRequest, headers);
         return new ResponseEntity<>(new CertificateRequestDTO(newRequest), HttpStatus.OK);
     }
