@@ -67,20 +67,17 @@ public class CertificateGeneratorService implements ICertificateGeneratorService
     @Override
     public LocalDateTime getExpirationDate(LocalDateTime parentCertificateEndDate, CertificateType type) {
         if (type == CertificateType.END){
-            LocalDateTime newDate = parentCertificateEndDate.plusDays(-10);
-            if(newDate.isBefore(LocalDateTime.now())) {
+            if(parentCertificateEndDate.isBefore(LocalDateTime.now().plusMonths(3))) {
                 throw new InvalidCertificateEndDateException("Parent certificate is ending soon, can't create!");
             }
-            return newDate;
+            return LocalDateTime.now().plusMonths(3);
         }
         else {
-            LocalDateTime newDate = parentCertificateEndDate.plusDays(-5);
-            if(newDate.isBefore(LocalDateTime.now())) {
+            if(parentCertificateEndDate.isBefore(LocalDateTime.now().plusMonths(6))) {
                 throw new InvalidCertificateEndDateException("Parent certificate is ending soon, can't create!");
             }
-            return newDate;
+            return LocalDateTime.now().plusMonths(6);
         }
-
 
     }
 

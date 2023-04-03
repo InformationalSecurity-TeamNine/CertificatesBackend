@@ -22,8 +22,6 @@ public class CertificateRequestDTO {
 
     private Long id;
 
-    private LocalDateTime validTo;
-
     private String issuerSN;
 
     private String username;

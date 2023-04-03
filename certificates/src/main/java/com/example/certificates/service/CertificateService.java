@@ -76,7 +76,7 @@ public class CertificateService implements ICertificateService {
         if (issuer != null){
             issuer.setUser(this.certificateRepository.getUserByCertificateId(issuer.getId()));
             validateIssuerEndCertificate(certificateRequest, issuer);
-            validateCertificateEndDate(certificateRequest, issuer);
+            //validateCertificateEndDate(certificateRequest, issuer);
         }
         CertificateRequest request = new CertificateRequest();
         request.setIssuer(this.userRepository.findById(Long.valueOf(userId)).get());
@@ -128,12 +128,6 @@ public class CertificateService implements ICertificateService {
         return certificate.getValidTo().isBefore(LocalDateTime.now());
     }
 
-    private void validateCertificateEndDate(CertificateRequestDTO certificateRequest, Certificate issuer) {
-        if(certificateRequest.getValidTo().isAfter(issuer.getValidTo())){
-            throw new InvalidCertificateEndDateException("Certificate end date must be before issuer end date.");
-
-        }
-    }
 
     private void validateIssuerEndCertificate(CertificateRequestDTO certificateRequest, Certificate issuer) {
         if(certificateRequest.getIssuerSN().length() > 0) {
