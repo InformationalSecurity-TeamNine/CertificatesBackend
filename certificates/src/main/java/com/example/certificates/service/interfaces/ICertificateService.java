@@ -10,7 +10,7 @@ import java.util.Map;
 
 public interface ICertificateService {
 
-    List<CertificateDTO> getAll();
+    List<CertificateUserDTO> getAll();
 
     List<CertificateRequestResponse> getPastRequests(Map<String, String> authHeader);
 

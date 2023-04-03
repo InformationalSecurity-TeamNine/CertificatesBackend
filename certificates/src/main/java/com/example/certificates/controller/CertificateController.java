@@ -32,9 +32,9 @@ public class CertificateController {
         this.certificateService = certificateService;
     }
     @GetMapping
-    public ResponseEntity<List<CertificateDTO>> getCertificates(){
+    public ResponseEntity<List<CertificateUserDTO>> getCertificates(){
 
-        List<CertificateDTO> allCertificates = this.certificateService.getAll();
+        List<CertificateUserDTO> allCertificates = this.certificateService.getAll();
         return new ResponseEntity<>(allCertificates, HttpStatus.OK);
     }
 

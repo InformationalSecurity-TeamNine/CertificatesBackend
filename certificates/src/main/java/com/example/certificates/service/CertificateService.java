@@ -19,6 +19,7 @@ import org.springframework.stereotype.Service;
 
 import java.security.KeyPair;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -42,8 +43,13 @@ public class CertificateService implements ICertificateService {
     }
 
     @Override
-    public List<CertificateDTO> getAll() {
-        return this.certificateRepository.getAllCertificates();
+    public List<CertificateUserDTO> getAll() {
+        List<CertificateDTO> certificates = this.certificateRepository.getAllCertificates();
+        List<CertificateUserDTO> newCertificates = new ArrayList<>();
+        for(CertificateDTO certificate: certificates){
+            newCertificates.add(new CertificateUserDTO(certificate));
+        }
+        return newCertificates;
     }
 
     @Override
