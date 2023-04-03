@@ -78,6 +78,9 @@ local.properties
 .idea/**/dictionaries
 .idea/**/shelf
 
+/certificates/certs/
+/certificates/keys/
+
 # AWS User-specific
 .idea/**/aws.xml
 
