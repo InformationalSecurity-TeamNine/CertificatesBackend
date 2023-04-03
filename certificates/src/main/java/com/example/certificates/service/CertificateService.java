@@ -93,8 +93,14 @@ public class CertificateService implements ICertificateService {
             }
             request.setCertificateType(CertificateType.valueOf(certificateRequest.getType()));
             CertificateRequest newRequest = this.certificateRequestRepository.save(request);
-            this.acceptRequest(newRequest.getId(), authHeader);
-            newRequest.setStatus(RequestStatus.ACCEPTED);
+            if(request.getParentCertificate() != null && userId.longValue() == request.getParentCertificate().getUser().getId()) {
+                this.acceptRequest(newRequest.getId(), authHeader);
+                newRequest.setStatus(RequestStatus.ACCEPTED);
+            }
+            else if(request.getParentCertificate() == null){
+                this.acceptRequest(newRequest.getId(), authHeader);
+                newRequest.setStatus(RequestStatus.ACCEPTED);
+            }
             return newRequest;
         }
         if(certificateRequest.getType().toString().equalsIgnoreCase(CertificateType.ROOT.toString())){
@@ -114,7 +120,7 @@ public class CertificateService implements ICertificateService {
 
         Optional<Certificate> certificate = certificateRepository.findById(id);
         if(certificate.isEmpty())
-            throw new NonExistingCertificateException("Certificate with the given serial number does not exist.");
+            throw new NonExistingCertificateException("Certificate with the given ID does not exist.");
 
         if(isExpired(certificate.get())) return false;
         if(isWithdrawn(certificate.get())) return false;

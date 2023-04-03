@@ -24,7 +24,6 @@ public class CertificateRequestDTO {
 
     private String issuerSN;
 
-    private String username;
 
     private String type;
 
@@ -32,7 +31,6 @@ public class CertificateRequestDTO {
 
     public CertificateRequestDTO(CertificateRequest certificateRequest){
         this.id = certificateRequest.getId();
-        this.username = certificateRequest.getIssuer().getEmail();
         if(certificateRequest.getParentCertificate() == null){
             this.issuerSN = "no issuer";
         }else{

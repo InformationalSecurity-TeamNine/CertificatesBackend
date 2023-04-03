@@ -24,12 +24,15 @@ public class CertificateUserDTO {
     @Lob
     private String serialNumber;
 
+    private LocalDateTime validTo;
+
     public CertificateUserDTO(CertificateDTO certificate){
         this.id = certificate.getId();
         this.issuedAt = certificate.getIssuedAt();
         this.user = new UserForCertificateDTO(certificate.getUser().getName(), certificate.getUser().getSurname(), certificate.getUser().getEmail());
         this.type = certificate.getType();
         this.serialNumber = certificate.getSerialNumber();
+        this.validTo = certificate.getValidTo();
     }
 
 }

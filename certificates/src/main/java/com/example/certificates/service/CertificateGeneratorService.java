@@ -65,15 +65,23 @@ public class CertificateGeneratorService implements ICertificateGeneratorService
     }
 
     @Override
-    public LocalDateTime getExpirationDate(LocalDateTime parentCertificateEndDate, CertificateType type) {
+    public LocalDateTime getExpirationDate(Certificate parentCertificate, CertificateType type) {
         if (type == CertificateType.END){
-            if(parentCertificateEndDate.isBefore(LocalDateTime.now().plusMonths(3))) {
+            if(parentCertificate.getValidTo().isBefore(LocalDateTime.now().plusMonths(3))) {
                 throw new InvalidCertificateEndDateException("Parent certificate is ending soon, can't create!");
             }
             return LocalDateTime.now().plusMonths(3);
         }
         else {
-            if(parentCertificateEndDate.isBefore(LocalDateTime.now().plusMonths(6))) {
+            if(parentCertificate.getType() == type){
+                LocalDateTime newDate = parentCertificate.getValidTo().minusMonths(1);
+                if(newDate.isAfter(LocalDateTime.now()))
+                    return parentCertificate.getValidTo().minusMonths(1);
+                else
+                    throw new InvalidCertificateEndDateException("Parent certificate is ending soon, can't create!");
+
+            }
+            if(parentCertificate.getValidTo().isBefore(LocalDateTime.now().plusMonths(6))) {
                 throw new InvalidCertificateEndDateException("Parent certificate is ending soon, can't create!");
             }
             return LocalDateTime.now().plusMonths(6);
@@ -93,7 +101,7 @@ public class CertificateGeneratorService implements ICertificateGeneratorService
             User parentIssuer = this.userRepository.getByCertificateId(parentCertificate.getId());
             parentCertificate.setUser(parentIssuer);
             certificate.setIssuingCertificate(parentCertificate);
-            certificate.setValidTo(getExpirationDate(parentCertificate.getValidTo(), certificateRequest.getCertificateType()));
+            certificate.setValidTo(getExpirationDate(parentCertificate, certificateRequest.getCertificateType()));
         }
         certificate.setSerialNumber(UUID.randomUUID().toString());
         certificate.setPublicKey(Base64.toBase64String(keyPair.getPublic().getEncoded()));

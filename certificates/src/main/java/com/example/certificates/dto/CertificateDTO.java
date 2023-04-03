@@ -25,5 +25,7 @@ public class CertificateDTO {
     @Lob
     private String serialNumber;
 
+    private LocalDateTime validTo;
+
 
 }
