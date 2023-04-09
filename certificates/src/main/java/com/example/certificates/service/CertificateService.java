@@ -17,13 +17,18 @@ import com.example.certificates.service.interfaces.ICertificateService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.math.BigInteger;
-import java.security.KeyPair;
+import java.security.*;
+import java.security.cert.CertificateEncodingException;
+import java.security.cert.CertificateException;
+import java.security.cert.CertificateFactory;
+import java.security.spec.InvalidKeySpecException;
+import java.security.spec.X509EncodedKeySpec;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 @Service
 public class CertificateService implements ICertificateService {
@@ -117,7 +122,7 @@ public class CertificateService implements ICertificateService {
     }
 
     @Override
-    public boolean isValid(Long id){
+    public boolean isValid(Long id) throws CertificateEncodingException, NoSuchAlgorithmException, InvalidKeySpecException {
 
         Optional<Certificate> certificate = certificateRepository.findById(id);
         if(certificate.isEmpty())
@@ -125,8 +130,95 @@ public class CertificateService implements ICertificateService {
 
         if(isExpired(certificate.get())) return false;
         if(isWithdrawn(certificate.get())) return false;
+        if(isStoredCertificateInvalid(id)) return false;
 
         return true;
+    }
+
+    private byte[] sign(byte[] data, PrivateKey privateKey) {
+        try {
+            // Kreiranje objekta koji nudi funkcionalnost digitalnog potpisivanja
+            // Prilikom getInstance poziva prosledjujemo algoritam koji cemo koristiti
+            // U ovom slucaju cemo generisati SHA-1 hes kod koji cemo potpisati upotrebom RSA asimetricne sifre
+            Signature sig = Signature.getInstance("SHA1withRSA");
+
+            // Navodimo kljuc kojim potpisujemo
+            sig.initSign(privateKey);
+
+            // Postavljamo podatke koje potpisujemo
+            sig.update(data);
+
+            // Vrsimo potpisivanje
+            return sig.sign();
+        } catch (InvalidKeyException | NoSuchAlgorithmException | SignatureException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    private boolean verify(byte[] data, byte[] signature, PublicKey publicKey) {
+        try {
+            // Kreiranje objekta koji nudi funkcionalnost digitalnog potpisivanja
+            // Prilikom getInstance poziva prosledjujemo algoritam koji cemo koristiti
+            // U ovom slucaju cemo generisati SHA-1 hes kod koji cemo potpisati upotrebom RSA asimetricne sifre
+            Signature sig = Signature.getInstance("SHA1withRSA");
+
+            // Navodimo kljuc sa kojim proveravamo potpis
+            sig.initVerify(publicKey);
+
+            // Postavljamo podatke koje potpisujemo
+            sig.update(data);
+
+            // Vrsimo proveru digitalnog potpisa
+            return sig.verify(signature);
+        } catch (InvalidKeyException | NoSuchAlgorithmException | SignatureException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    @SuppressWarnings("rawtypes")
+    private java.security.cert.Certificate readFromBinEncFile(String sn) {
+        try {
+            String name = "certs/" + new BigInteger(sn.replace("-", ""), 16) + ".crt";
+
+            FileInputStream fis = new FileInputStream(name);
+            CertificateFactory cf = CertificateFactory.getInstance("X.509");
+            Collection c = cf.generateCertificates(fis);
+            Iterator i = c.iterator();
+            while (i.hasNext()) {
+                java.security.cert.Certificate cert = (java.security.cert.Certificate) i.next();
+                return cert;
+            }
+        } catch (FileNotFoundException | CertificateException e) {
+            return null;
+        }
+        return null;
+    }
+    private PublicKey convertStringToPublicKey(String key) throws NoSuchAlgorithmException, InvalidKeySpecException {
+        byte[] keyBytes = Base64.getDecoder().decode(key);
+        X509EncodedKeySpec spec = new X509EncodedKeySpec(keyBytes);
+        KeyFactory keyFactory = KeyFactory.getInstance("RSA");
+        PublicKey publicKey = keyFactory.generatePublic(spec);
+        return publicKey;
+    }
+
+    private boolean isStoredCertificateInvalid(Long id) throws CertificateEncodingException, NoSuchAlgorithmException, InvalidKeySpecException {
+        Optional<Certificate> certificate = this.certificateRepository.findById(id);
+        if(certificate.isEmpty()){
+            throw new NonExistingCertificateException("Certificate with that id does not exist");
+        }
+        String publicKey = certificate.get().getPublicKey();
+        String sn = certificate.get().getSerialNumber();
+        PrivateKey privateKey = this.certificateGeneratorService.getPrivateKey(sn);
+        java.security.cert.Certificate certificate1 = readFromBinEncFile(sn);
+        if (certificate1 == null){
+            return true;
+        }
+        byte[] dataToSign = certificate1.getEncoded();
+        byte[] signature = sign(dataToSign, privateKey);
+
+        return !verify(dataToSign,signature,convertStringToPublicKey(publicKey));
     }
 
     private boolean isWithdrawn(Certificate certificate){

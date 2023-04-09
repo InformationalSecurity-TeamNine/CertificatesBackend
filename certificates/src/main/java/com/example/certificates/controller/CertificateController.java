@@ -18,6 +18,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
+import java.security.NoSuchAlgorithmException;
+import java.security.cert.CertificateEncodingException;
+import java.security.spec.InvalidKeySpecException;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -50,7 +53,7 @@ public class CertificateController {
 
     @GetMapping(value = "/valid/{id}")
     public ResponseEntity<Boolean> getCertificateValidation(
-            @PathVariable("id")Long id){
+            @PathVariable("id")Long id) throws CertificateEncodingException, NoSuchAlgorithmException, InvalidKeySpecException {
 
         boolean isValid = this.certificateService.isValid(id);
         return new ResponseEntity<>(isValid, HttpStatus.OK);

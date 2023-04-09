@@ -101,7 +101,7 @@ public class CertificateGeneratorService implements ICertificateGeneratorService
         certificate.setType(certificateRequest.getCertificateType());
         certificate.setSignatureAlgorithm("SHA256WithRSAEncryption");
         SubjectData subjectData = generateSubjectData(certificate);
-        IssuerData issuerData  = generateIssuerData(certificate, keyPair);
+        IssuerData issuerData  = generateIssuerData(certificate, keyPair, user);
         X509Certificate newCertificate = generateCertificate(subjectData, issuerData);
         certificate = this.certificateRepository.save(certificate);
         saveCertificate(newCertificate);
@@ -141,7 +141,7 @@ public class CertificateGeneratorService implements ICertificateGeneratorService
 
         return new SubjectData(convertByteToPublicKey(certificate.getPublicKey()), builder.build(), certificate.getSerialNumber(), certificate.getValidFrom().toLocalDate(), certificate.getValidTo().toLocalDate());
     }
-    private IssuerData generateIssuerData(Certificate certificate, KeyPair keyPair){
+    private IssuerData generateIssuerData(Certificate certificate, KeyPair keyPair, User user){
         PrivateKey issuerKey;
         X500NameBuilder builder = new X500NameBuilder(BCStyle.INSTANCE);
         if (certificate.getType()!=CertificateType.ROOT) {
@@ -152,6 +152,10 @@ public class CertificateGeneratorService implements ICertificateGeneratorService
         }
         if (certificate.getType() == CertificateType.ROOT)
         {
+            builder.addRDN(BCStyle.CN, user.getEmail());
+            builder.addRDN(BCStyle.SURNAME, user.getSurname());
+            builder.addRDN(BCStyle.GIVENNAME, user.getName());
+            builder.addRDN(BCStyle.UID, String.valueOf(user.getId()));
             issuerKey = keyPair.getPrivate();
         }
         else if (Objects.equals(certificate.getUser().getId(), certificate.getIssuingCertificate().getUser().getId())) {
@@ -182,6 +186,7 @@ public class CertificateGeneratorService implements ICertificateGeneratorService
             throw new RuntimeException(e);
         }
     }
+    @Override
     public PrivateKey getPrivateKey(String certificateSN) {
         try {
 

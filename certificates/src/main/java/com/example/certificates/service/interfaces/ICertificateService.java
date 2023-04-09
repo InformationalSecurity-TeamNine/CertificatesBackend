@@ -5,6 +5,9 @@ import com.example.certificates.dto.*;
 
 import com.example.certificates.model.CertificateRequest;
 
+import java.security.NoSuchAlgorithmException;
+import java.security.cert.CertificateEncodingException;
+import java.security.spec.InvalidKeySpecException;
 import java.util.List;
 import java.util.Map;
 
@@ -21,6 +24,6 @@ public interface ICertificateService {
 
     String acceptRequest(Long id, Map<String, String> authHeader);
 
-    boolean isValid(Long id);
+    boolean isValid(Long id) throws CertificateEncodingException, NoSuchAlgorithmException, InvalidKeySpecException;
 
 }
