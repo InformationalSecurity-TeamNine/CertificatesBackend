@@ -84,6 +84,7 @@ public class CertificateService implements ICertificateService {
         request.setIssuer(this.userRepository.findById(Long.valueOf(userId)).get());
         request.setStatus(RequestStatus.PENDING);
         request.setParentCertificate(issuer);
+        request.setTime(certificateRequest.getTime());
 
 
         if(role.equalsIgnoreCase("admin")){

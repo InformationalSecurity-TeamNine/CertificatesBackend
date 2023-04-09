@@ -64,30 +64,7 @@ public class CertificateGeneratorService implements ICertificateGeneratorService
         return null;
     }
 
-    @Override
-    public LocalDateTime getExpirationDate(Certificate parentCertificate, CertificateType type) {
-        if (type == CertificateType.END){
-            if(parentCertificate.getValidTo().isBefore(LocalDateTime.now().plusMonths(3))) {
-                throw new InvalidCertificateEndDateException("Parent certificate is ending soon, can't create!");
-            }
-            return LocalDateTime.now().plusMonths(3);
-        }
-        else {
-            if(parentCertificate.getType() == type){
-                LocalDateTime newDate = parentCertificate.getValidTo().minusMonths(1);
-                if(newDate.isAfter(LocalDateTime.now()))
-                    return parentCertificate.getValidTo().minusMonths(1);
-                else
-                    throw new InvalidCertificateEndDateException("Parent certificate is ending soon, can't create!");
 
-            }
-            if(parentCertificate.getValidTo().isBefore(LocalDateTime.now().plusMonths(6))) {
-                throw new InvalidCertificateEndDateException("Parent certificate is ending soon, can't create!");
-            }
-            return LocalDateTime.now().plusMonths(6);
-        }
-
-    }
 
     @Override
     public Certificate createCertificate(CertificateRequest certificateRequest, KeyPair keyPair) {
@@ -95,13 +72,22 @@ public class CertificateGeneratorService implements ICertificateGeneratorService
         certificate.setValidFrom(LocalDateTime.now());
         Certificate parentCertificate = null;
         if (certificateRequest.getCertificateType() == CertificateType.ROOT){
-            certificate.setValidTo(LocalDateTime.now().plusYears(3));
+            certificate.setValidTo(certificateRequest.getTime());
+            if (certificateRequest.getTime().isBefore(LocalDateTime.now())){
+                throw new InvalidCertificateEndDateException("Certificate expiration date can not be in the past");
+            }
         }else {
             parentCertificate = this.certificateRepository.getParentCertificateByRequestId(certificateRequest.getId());
             User parentIssuer = this.userRepository.getByCertificateId(parentCertificate.getId());
             parentCertificate.setUser(parentIssuer);
             certificate.setIssuingCertificate(parentCertificate);
-            certificate.setValidTo(getExpirationDate(parentCertificate, certificateRequest.getCertificateType()));
+            if (certificateRequest.getTime().isAfter(parentCertificate.getValidTo())){
+                throw new InvalidCertificateEndDateException("Certificate expiration date can not be after parent certificate");
+            }
+            if (certificateRequest.getTime().isBefore(LocalDateTime.now())){
+                throw new InvalidCertificateEndDateException("Certificate expiration date can not be in the past");
+            }
+            certificate.setValidTo(certificateRequest.getTime());
         }
         certificate.setSerialNumber(UUID.randomUUID().toString());
         certificate.setPublicKey(Base64.toBase64String(keyPair.getPublic().getEncoded()));

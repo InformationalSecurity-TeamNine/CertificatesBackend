@@ -9,7 +9,7 @@ import java.time.LocalDateTime;
 
 public interface ICertificateGeneratorService {
     public KeyPair generateKeyPair();
-    public LocalDateTime getExpirationDate(Certificate parentCertificate, CertificateType type);
+
 
     public Certificate createCertificate(CertificateRequest certificateRequest, KeyPair keyPair);
 }

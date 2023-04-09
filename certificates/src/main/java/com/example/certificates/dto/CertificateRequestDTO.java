@@ -24,6 +24,8 @@ public class CertificateRequestDTO {
 
     private String issuerSN;
 
+    private LocalDateTime time;
+
 
     private String type;
 
@@ -37,6 +39,7 @@ public class CertificateRequestDTO {
             this.issuerSN = certificateRequest.getParentCertificate().getId().toString();
         }
         this.type = certificateRequest.getCertificateType().toString();
+        this.time = certificateRequest.getTime();
 
     }
 }

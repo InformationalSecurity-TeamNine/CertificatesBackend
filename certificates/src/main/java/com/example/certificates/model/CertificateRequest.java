@@ -6,6 +6,7 @@ import lombok.*;
 
 import javax.persistence.*;
 import java.io.Serializable;
+import java.time.LocalDateTime;
 
 @Entity
 @Getter
@@ -32,6 +33,8 @@ public class CertificateRequest implements Serializable {
     @Enumerated(EnumType.STRING)
     @Column
     private RequestStatus status;
+
+    private LocalDateTime time;
 
     private String reason;
 
