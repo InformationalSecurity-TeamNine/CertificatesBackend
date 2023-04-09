@@ -183,6 +183,10 @@ public class CertificateService implements ICertificateService {
         if(request.isEmpty()) throw new NonExistingRequestException("The request with the given id doesn't exist");
 
         if (request.get().getCertificateType()!=CertificateType.ROOT){
+            if (this.certificateRequestRepository.getIssuerCertificateUserIdByRequestId(request.get().getId()) == null){
+                throw new NonExistingParentCertificateException("Invalid parent Id");
+            }
+
             if (userId.longValue() != this.certificateRequestRepository.getIssuerCertificateUserIdByRequestId(request.get().getId())) {
                 throw new NonExistingRequestException("The request with the given id doesn't exist");
             }

@@ -123,6 +123,15 @@ public class ValidationHandler {
         return new ErrorResponse(ex.getMessage());
     }
 
+    @ExceptionHandler(value
+            = NonExistingParentCertificateException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public @ResponseBody ErrorResponse
+    handleNonExistingRequestException(NonExistingParentCertificateException ex)
+    {
+        return new ErrorResponse(ex.getMessage());
+    }
+
 
 
     @ExceptionHandler(AccessDeniedException.class)
