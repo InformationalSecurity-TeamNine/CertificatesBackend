@@ -3,33 +3,76 @@ package com.example.certificates.service;
 import com.example.certificates.dto.RegisteredUserDTO;
 import com.example.certificates.dto.UserDTO;
 import com.example.certificates.enums.UserRole;
+import com.example.certificates.exceptions.CodeExpiredException;
 import com.example.certificates.exceptions.InvalidRepeatPasswordException;
+import com.example.certificates.exceptions.NonExistingVerificationCodeException;
 import com.example.certificates.exceptions.UserAlreadyExistsException;
 import com.example.certificates.model.User;
+import com.example.certificates.model.Verification;
+import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.MimeMessageHelper;
 import com.example.certificates.repository.UserRepository;
 import com.example.certificates.service.interfaces.IUserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.springframework.stereotype.Service;
 
+import javax.mail.MessagingException;
+import javax.mail.internet.MimeMessage;
+import java.io.UnsupportedEncodingException;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 @Service
 public class UserService implements IUserService {
     private final UserRepository userRepository;
 
+    private final JavaMailSender mailSender;
+
     @Autowired
-    public UserService(UserRepository userRepository){
+    public UserService(UserRepository userRepository, JavaMailSender mailSender){
         this.userRepository = userRepository;
+        this.mailSender = mailSender;
     }
+
     @Override
-    public RegisteredUserDTO register(UserDTO registrationDTO) {
+    public RegisteredUserDTO register(UserDTO registrationDTO) throws UnsupportedEncodingException, MessagingException {
 
         checkValidUserInformation(registrationDTO);
         User user = getUserFromRegistrationDTO(registrationDTO);
+        sendVerificationEmail(user);
         return new RegisteredUserDTO(user);
+    }
+    private void sendVerificationEmail(User user) throws MessagingException, UnsupportedEncodingException {
+        String toAddress = user.getEmail();
+        String fromAddress = "tim9certificates@gmail.com";
+        String senderName = "Certificate app";
+        String subject = "Verify the registration";
+        String content = "Dear [[name]],<br>"
+                + "Please click the link below to verify your registration:<br>"
+                + "<h3><a href=\"[[URL]]\" target=\"_self\">VERIFY</a></h3>"
+                + "Thank you,<br>"
+                + "Certificate app.";
+
+        MimeMessage message = mailSender.createMimeMessage();
+        MimeMessageHelper helper = new MimeMessageHelper(message);
+
+        helper.setFrom(fromAddress, senderName);
+        helper.setTo(toAddress);
+        helper.setSubject(subject);
+
+        content = content.replace("[[name]]", user.getName());
+        String verifyURL = "http://localhost:8082/api/user/activate/" + user.getVerification().getVerificationCode();
+
+        content = content.replace("[[URL]]", verifyURL);
+
+        helper.setText(content, true);
+
+        mailSender.send(message);
     }
 
     private void checkValidUserInformation(UserDTO registrationDTO) {
@@ -57,6 +100,21 @@ public class UserService implements IUserService {
         return this.userRepository.isEmailConfirmed(email).isPresent();
     }
 
+    @Override
+    public void verifyUser(String verificationCode) {
+        User user = userRepository.findUserByVerification(verificationCode).orElse(null);
+
+        if (user == null) {
+            throw new NonExistingVerificationCodeException("That verification code does not exist!");
+        } else if (user.getVerification().getExpirationDate().isBefore(LocalDateTime.now())) {
+            throw new CodeExpiredException("Verification code expired. Register again!");
+        } else {
+            user.setEmailConfirmed(true);
+            userRepository.save(user);
+        }
+
+    }
+
     private User getUserFromRegistrationDTO(UserDTO registrationDTO) {
         User user = new User();
         user.setEmail(registrationDTO.getEmail());
@@ -66,8 +124,10 @@ public class UserService implements IUserService {
         user.setTelephoneNumber(registrationDTO.getTelephoneNumber());
         user.setSurname(registrationDTO.getSurname());
         user.setName(registrationDTO.getName());
-        user.setEmailConfirmed(true);
         user.setLastTimePasswordChanged(LocalDateTime.now());
+        String randomCode = RandomStringUtils.randomAlphanumeric(64);
+        user.setVerification(new Verification(randomCode, LocalDateTime.now().plusDays(3)));
+        user.setEmailConfirmed(false);
         user = this.userRepository.save(user);
         return user;
     }

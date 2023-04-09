@@ -5,6 +5,7 @@ import com.example.certificates.dto.RegisteredUserDTO;
 import com.example.certificates.dto.TokenDTO;
 import com.example.certificates.dto.UserDTO;
 import com.example.certificates.model.ErrorResponseMessage;
+import com.example.certificates.security.ErrorResponse;
 import com.example.certificates.security.JwtTokenUtil;
 import com.example.certificates.security.SecurityUser;
 import com.example.certificates.service.interfaces.IUserService;
@@ -18,7 +19,10 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
+
+import javax.mail.MessagingException;
 import javax.validation.Valid;
+import java.io.UnsupportedEncodingException;
 import java.util.Locale;
 
 @CrossOrigin
@@ -42,13 +46,18 @@ public class UserController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<RegisteredUserDTO> register(@Valid @RequestBody UserDTO userDTO){
+    public ResponseEntity<RegisteredUserDTO> register(@Valid @RequestBody UserDTO userDTO) throws UnsupportedEncodingException, MessagingException {
 
 
         RegisteredUserDTO newUser = this.userService.register(userDTO);
 
         return new ResponseEntity<>(newUser, HttpStatus.OK);
 
+    }
+    @GetMapping(value = "/activate/{idActivation}")
+    public ResponseEntity<ErrorResponse> activatePassenger(@PathVariable("idActivation") String verificationCode) {
+        userService.verifyUser(verificationCode);
+        return new ResponseEntity<>(new ErrorResponse("Account activated!"),HttpStatus.OK);
     }
 
     @PostMapping("/login")

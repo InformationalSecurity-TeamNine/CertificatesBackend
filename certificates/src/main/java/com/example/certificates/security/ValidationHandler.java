@@ -127,7 +127,25 @@ public class ValidationHandler {
             = NonExistingParentCertificateException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public @ResponseBody ErrorResponse
-    handleNonExistingRequestException(NonExistingParentCertificateException ex)
+    handleNonExistingParentCertificateException(NonExistingParentCertificateException ex)
+    {
+        return new ErrorResponse(ex.getMessage());
+    }
+
+    @ExceptionHandler(value
+            = NonExistingVerificationCodeException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public @ResponseBody ErrorResponse
+    handleNonExistingVerificationCodeException(NonExistingVerificationCodeException ex)
+    {
+        return new ErrorResponse(ex.getMessage());
+    }
+
+    @ExceptionHandler(value
+            = CodeExpiredException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public @ResponseBody ErrorResponse
+    handleCodeExpiredException(CodeExpiredException ex)
     {
         return new ErrorResponse(ex.getMessage());
     }
