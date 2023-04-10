@@ -8,9 +8,11 @@ import com.example.certificates.enums.RequestStatus;
 import com.example.certificates.exceptions.*;
 import com.example.certificates.model.Certificate;
 import com.example.certificates.model.CertificateRequest;
+import com.example.certificates.model.CertificateWithdraw;
 import com.example.certificates.model.User;
 import com.example.certificates.repository.CertificateRepository;
 import com.example.certificates.repository.CertificateRequestRepository;
+import com.example.certificates.repository.CertificateWithdrawRepository;
 import com.example.certificates.repository.UserRepository;
 import com.example.certificates.security.UserRequestValidation;
 import com.example.certificates.service.interfaces.ICertificateGeneratorService;
@@ -38,14 +40,17 @@ public class CertificateService implements ICertificateService {
     private final UserRequestValidation userRequestValidation;
     private final ICertificateGeneratorService certificateGeneratorService;
 
+    private final CertificateWithdrawRepository certificateWithdrawRepository;
+
 
     @Autowired
-    public CertificateService(CertificateRepository certificateRepository, CertificateRequestRepository certificateRequestRepository, UserRepository userRepository, UserRequestValidation userRequestValidation, ICertificateGeneratorService certificateGeneratorService){
+    public CertificateService(CertificateRepository certificateRepository, CertificateRequestRepository certificateRequestRepository, UserRepository userRepository, UserRequestValidation userRequestValidation, ICertificateGeneratorService certificateGeneratorService, CertificateWithdrawRepository certificateWithdrawRepository){
         this.certificateRepository = certificateRepository;
         this.certificateRequestRepository = certificateRequestRepository;
         this.userRepository = userRepository;
         this.userRequestValidation = userRequestValidation;
         this.certificateGeneratorService = certificateGeneratorService;
+        this.certificateWithdrawRepository = certificateWithdrawRepository;
     }
 
     @Override
@@ -136,6 +141,11 @@ public class CertificateService implements ICertificateService {
 
     @Override
     public CertificateWithdrawDTO withdraw(Long id, WithdrawReasonDTO withdrawReason, Map<String, String> headers) {
+        Integer userId = this.userRequestValidation.getUserId(headers);
+        Optional<User> userOpt = this.userRepository.findById(userId.longValue());
+        if(userOpt.isEmpty()) throw new ("")
+
+
         Optional<Certificate> certificateOpt = this.certificateRepository.findById(id);
         if(certificateOpt.isEmpty()) throw new NonExistingCertificateException("Certificate with the given ID does not exist.");
         Certificate certificate = certificateOpt.get();
@@ -143,6 +153,11 @@ public class CertificateService implements ICertificateService {
         certificate.setStatus(CertificateStatus.NOT_VALID);
         this.certificateRepository.save(certificate);
         withdrawCertificateChain(id);
+        this.certificateWithdrawRepository.save(
+                new CertificateWithdraw(
+
+                )
+        )
 
         return new CertificateWithdrawDTO(certificate.getId(), withdrawReason.getReason());
     }
