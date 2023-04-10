@@ -4,12 +4,8 @@ import com.example.certificates.dto.*;
 import com.example.certificates.enums.CertificateType;
 import com.example.certificates.model.CertificateRequest;
 
-import com.example.certificates.dto.AcceptRequestDTO;
-import com.example.certificates.dto.CertificateDTO;
 import com.example.certificates.dto.DeclineReasonDTO;
 import com.example.certificates.dto.DeclineRequestDTO;
-import com.example.certificates.model.Paginated;
-import com.example.certificates.security.UserRequestValidation;
 import com.example.certificates.service.interfaces.ICertificateService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -53,7 +49,7 @@ public class CertificateController {
 
     @GetMapping(value = "/valid/{id}")
     public ResponseEntity<Boolean> getCertificateValidation(
-            @PathVariable("id")Long id) throws CertificateEncodingException, NoSuchAlgorithmException, InvalidKeySpecException {
+            @PathVariable("id")Long id){
 
         boolean isValid = this.certificateService.isValid(id);
         return new ResponseEntity<>(isValid, HttpStatus.OK);
@@ -94,5 +90,19 @@ public class CertificateController {
         }
         CertificateRequest newRequest = this.certificateService.createRequest(certificateRequest, headers);
         return new ResponseEntity<>(new CertificateRequestDTO(newRequest), HttpStatus.OK);
+    }
+
+
+    @PutMapping("/withdraw/{id}")
+    public ResponseEntity<CertificateWithdrawDTO> withdrawCertificate(
+            @PathVariable Long id,
+            @Valid @RequestBody WithdrawReasonDTO withdrawReason,
+            @RequestHeader Map<String, String> headers
+    ){
+
+        CertificateWithdrawDTO withdraw = this.certificateService.withdraw(id, withdrawReason, headers);
+
+        return new ResponseEntity<>(withdraw, HttpStatus.OK);
+
     }
 }

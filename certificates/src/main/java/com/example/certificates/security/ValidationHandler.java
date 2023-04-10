@@ -3,7 +3,6 @@ package com.example.certificates.security;
 import com.example.certificates.exceptions.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.AuthenticationException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -131,7 +130,14 @@ public class ValidationHandler {
     {
         return new ErrorResponse(ex.getMessage());
     }
-
+    @ExceptionHandler(value
+            = NonExistingUserException.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    public @ResponseBody ErrorResponse
+    handleNonExistingRequestException(NonExistingUserException ex)
+    {
+        return new ErrorResponse(ex.getMessage());
+    }
 
 
     @ExceptionHandler(AccessDeniedException.class)

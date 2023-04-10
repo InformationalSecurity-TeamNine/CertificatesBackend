@@ -11,6 +11,7 @@ import org.springframework.stereotype.Repository;
 import javax.transaction.Transactional;
 import java.math.BigInteger;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface CertificateRepository extends JpaRepository<Certificate, Long> {
@@ -21,7 +22,7 @@ public interface CertificateRepository extends JpaRepository<Certificate, Long> 
 
 
     @Transactional
-    @Query("select new com.example.certificates.dto.CertificateDTO(c.id, c.validFrom, u, c.type, c.serialNumber, c.validTo)" +
+    @Query("select new com.example.certificates.dto.CertificateDTO(c.id, c.validFrom, u, c.type, c.serialNumber, c.validTo, c.status)" +
             " from Certificate c inner join User u on c.user.id=u.id")
     List<CertificateDTO> getAllCertificates();
 
@@ -33,4 +34,8 @@ public interface CertificateRepository extends JpaRepository<Certificate, Long> 
     @Query("select c from Certificate c inner join CertificateRequest cr " +
             "on c.id=cr.parentCertificate.id where cr.id=:id")
     Certificate getParentCertificateByRequestId(Long id);
+
+    @Transactional
+    @Query("select c from Certificate c where c.issuingCertificate.id=:parentCertificateId")
+    List<Certificate> findByParentId(Long parentCertificateId);
 }

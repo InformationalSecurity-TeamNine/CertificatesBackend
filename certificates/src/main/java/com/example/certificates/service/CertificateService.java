@@ -5,11 +5,15 @@ import com.example.certificates.dto.*;
 import com.example.certificates.enums.CertificateStatus;
 import com.example.certificates.enums.CertificateType;
 import com.example.certificates.enums.RequestStatus;
+import com.example.certificates.enums.UserRole;
 import com.example.certificates.exceptions.*;
 import com.example.certificates.model.Certificate;
 import com.example.certificates.model.CertificateRequest;
+import com.example.certificates.model.CertificateWithdraw;
+import com.example.certificates.model.User;
 import com.example.certificates.repository.CertificateRepository;
 import com.example.certificates.repository.CertificateRequestRepository;
+import com.example.certificates.repository.CertificateWithdrawRepository;
 import com.example.certificates.repository.UserRepository;
 import com.example.certificates.security.UserRequestValidation;
 import com.example.certificates.service.interfaces.ICertificateGeneratorService;
@@ -17,7 +21,6 @@ import com.example.certificates.service.interfaces.ICertificateService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.math.BigInteger;
@@ -38,14 +41,17 @@ public class CertificateService implements ICertificateService {
     private final UserRequestValidation userRequestValidation;
     private final ICertificateGeneratorService certificateGeneratorService;
 
+    private final CertificateWithdrawRepository certificateWithdrawRepository;
+
 
     @Autowired
-    public CertificateService(CertificateRepository certificateRepository, CertificateRequestRepository certificateRequestRepository, UserRepository userRepository, UserRequestValidation userRequestValidation, ICertificateGeneratorService certificateGeneratorService){
+    public CertificateService(CertificateRepository certificateRepository, CertificateRequestRepository certificateRequestRepository, UserRepository userRepository, UserRequestValidation userRequestValidation, ICertificateGeneratorService certificateGeneratorService, CertificateWithdrawRepository certificateWithdrawRepository){
         this.certificateRepository = certificateRepository;
         this.certificateRequestRepository = certificateRequestRepository;
         this.userRepository = userRepository;
         this.userRequestValidation = userRequestValidation;
         this.certificateGeneratorService = certificateGeneratorService;
+        this.certificateWithdrawRepository = certificateWithdrawRepository;
     }
 
     @Override
@@ -82,11 +88,15 @@ public class CertificateService implements ICertificateService {
         }
         if (issuer != null){
             issuer.setUser(this.certificateRepository.getUserByCertificateId(issuer.getId()));
+            if(!this.isValid(issuer.getId()))
+                throw new InvalidIssuerException("Issuing certificate is invalid.");
+
             validateIssuerEndCertificate(certificateRequest, issuer);
             //validateCertificateEndDate(certificateRequest, issuer);
         }
         CertificateRequest request = new CertificateRequest();
-        request.setIssuer(this.userRepository.findById(Long.valueOf(userId)).get());
+        Optional<User> requestIssuer = this.userRepository.findById(Long.valueOf(userId));
+        requestIssuer.ifPresent(request::setIssuer);
         request.setStatus(RequestStatus.PENDING);
         request.setParentCertificate(issuer);
         request.setTime(certificateRequest.getTime());
@@ -122,7 +132,7 @@ public class CertificateService implements ICertificateService {
     }
 
     @Override
-    public boolean isValid(Long id) throws CertificateEncodingException, NoSuchAlgorithmException, InvalidKeySpecException {
+    public boolean isValid(Long id) {
 
         Optional<Certificate> certificate = certificateRepository.findById(id);
         if(certificate.isEmpty())
@@ -130,9 +140,75 @@ public class CertificateService implements ICertificateService {
 
         if(isExpired(certificate.get())) return false;
         if(isWithdrawn(certificate.get())) return false;
-        if(isStoredCertificateInvalid(id)) return false;
+        return !isStoredCertificateInvalid(id);
+    }
 
-        return true;
+    @Override
+    public CertificateWithdrawDTO withdraw(Long id, WithdrawReasonDTO withdrawReason, Map<String, String> headers) {
+        Integer userId = this.userRequestValidation.getUserId(headers);
+        String role = this.userRequestValidation.getRoleFromToken(headers);
+
+        Optional<User> userOpt = this.userRepository.findById(userId.longValue());
+        if(userOpt.isEmpty()) throw new NonExistingUserException("User with given id not found");
+
+
+        Optional<Certificate> certificateOpt = this.certificateRepository.findById(id);
+        if(certificateOpt.isEmpty()) throw new NonExistingCertificateException("Certificate with the given ID does not exist.");
+        Certificate certificate = certificateOpt.get();
+        if(role.toString().equals(UserRole.BASIC_USER.toString())){
+            User user = this.userRepository.getByCertificateId(certificate.getId());
+            if(!Objects.equals(user.getId(), userOpt.get().getId()))
+                throw new NonExistingCertificateException("The certificate with the given id does not exist.");
+
+        }
+
+        certificate.setStatus(CertificateStatus.NOT_VALID);
+        certificate = this.certificateRepository.save(certificate);
+
+        LocalDateTime now = LocalDateTime.now();
+        this.certificateWithdrawRepository.save(
+                new CertificateWithdraw(
+                        userOpt.get(),
+                        certificate,
+                        now,
+                        withdrawReason.getReason(),
+                        false
+                )
+        );
+        withdrawCertificateChain(id, now, userOpt.get(), withdrawReason.getReason());
+
+        return new CertificateWithdrawDTO(certificate.getId(), withdrawReason.getReason());
+    }
+
+    private void withdrawCertificateChain(Long parentCertificateId,
+                                          LocalDateTime withdrawTime,
+                                          User user,
+                                          String reason){
+        List<Certificate> certificates = this.certificateRepository.findByParentId(parentCertificateId);
+        if(certificates.isEmpty())
+            return;
+
+        for(Certificate certificate:certificates){
+
+            if(certificate.getType() == CertificateType.END)
+                certificate.setStatus(CertificateStatus.NOT_VALID);
+            else
+            {
+                certificate.setStatus(CertificateStatus.NOT_VALID);
+                this.withdrawCertificateChain(certificate.getId(), withdrawTime, user, reason);
+            }
+            this.certificateRepository.save(certificate);
+            this.certificateWithdrawRepository.save(
+                    new CertificateWithdraw(
+                           user,
+                            certificate,
+                            withdrawTime,
+                            reason,
+                            true
+                    )
+            );
+        }
+
     }
 
     private byte[] sign(byte[] data, PrivateKey privateKey) {
@@ -187,23 +263,30 @@ public class CertificateService implements ICertificateService {
             Collection c = cf.generateCertificates(fis);
             Iterator i = c.iterator();
             while (i.hasNext()) {
-                java.security.cert.Certificate cert = (java.security.cert.Certificate) i.next();
-                return cert;
+                return (java.security.cert.Certificate) i.next();
             }
         } catch (FileNotFoundException | CertificateException e) {
             return null;
         }
         return null;
     }
-    private PublicKey convertStringToPublicKey(String key) throws NoSuchAlgorithmException, InvalidKeySpecException {
+    private PublicKey convertStringToPublicKey(String key) {
         byte[] keyBytes = Base64.getDecoder().decode(key);
         X509EncodedKeySpec spec = new X509EncodedKeySpec(keyBytes);
-        KeyFactory keyFactory = KeyFactory.getInstance("RSA");
-        PublicKey publicKey = keyFactory.generatePublic(spec);
-        return publicKey;
+        KeyFactory keyFactory = null;
+        try {
+            keyFactory = KeyFactory.getInstance("RSA");
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException(e);
+        }
+        try {
+            return keyFactory.generatePublic(spec);
+        } catch (InvalidKeySpecException e) {
+            throw new RuntimeException(e);
+        }
     }
 
-    private boolean isStoredCertificateInvalid(Long id) throws CertificateEncodingException, NoSuchAlgorithmException, InvalidKeySpecException {
+    private boolean isStoredCertificateInvalid(Long id){
         Optional<Certificate> certificate = this.certificateRepository.findById(id);
         if(certificate.isEmpty()){
             throw new NonExistingCertificateException("Certificate with that id does not exist");
@@ -215,7 +298,12 @@ public class CertificateService implements ICertificateService {
         if (certificate1 == null){
             return true;
         }
-        byte[] dataToSign = certificate1.getEncoded();
+        byte[] dataToSign = new byte[0];
+        try {
+            dataToSign = certificate1.getEncoded();
+        } catch (CertificateEncodingException e) {
+            throw new RuntimeException(e);
+        }
         byte[] signature = sign(dataToSign, privateKey);
 
         return !verify(dataToSign,signature,convertStringToPublicKey(publicKey));
@@ -294,9 +382,6 @@ public class CertificateService implements ICertificateService {
         this.certificateRequestRepository.save(request.get());
         return "Request accepted";
     }
-
-
-
 
 
 }
