@@ -173,7 +173,7 @@ public class CertificateService implements ICertificateService {
                 )
         );
         withdrawCertificateChain(id, now, userOpt.get(), withdrawReason.getReason());
-        
+
         return new CertificateWithdrawDTO(certificate.getId(), withdrawReason.getReason());
     }
 
