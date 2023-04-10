@@ -136,7 +136,34 @@ public class CertificateService implements ICertificateService {
 
     @Override
     public CertificateWithdrawDTO withdraw(Long id, WithdrawReasonDTO withdrawReason, Map<String, String> headers) {
-        return null;
+        Optional<Certificate> certificateOpt = this.certificateRepository.findById(id);
+        if(certificateOpt.isEmpty()) throw new NonExistingCertificateException("Certificate with the given ID does not exist.");
+        Certificate certificate = certificateOpt.get();
+
+        certificate.setStatus(CertificateStatus.NOT_VALID);
+        this.certificateRepository.save(certificate);
+        withdrawCertificateChain(id);
+
+        return new CertificateWithdrawDTO(certificate.getId(), withdrawReason.getReason());
+    }
+
+    private void withdrawCertificateChain(Long parentCertificateId){
+        List<Certificate> certificates = this.certificateRepository.findByParentId(parentCertificateId);
+        if(certificates.isEmpty())
+            return;
+
+        for(Certificate certificate:certificates){
+
+            if(certificate.getType() == CertificateType.END)
+                certificate.setStatus(CertificateStatus.NOT_VALID);
+            else
+            {
+                certificate.setStatus(CertificateStatus.NOT_VALID);
+                this.withdrawCertificateChain(certificate.getId());
+            }
+            this.certificateRepository.save(certificate);
+        }
+
     }
 
     private byte[] sign(byte[] data, PrivateKey privateKey) {
@@ -296,9 +323,6 @@ public class CertificateService implements ICertificateService {
         this.certificateRequestRepository.save(request.get());
         return "Request accepted";
     }
-
-
-
 
 
 }

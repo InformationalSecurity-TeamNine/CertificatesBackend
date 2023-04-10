@@ -1,6 +1,5 @@
 package com.example.certificates.dto;
 
-
 import lombok.*;
 
 @Getter
@@ -9,4 +8,8 @@ import lombok.*;
 @AllArgsConstructor
 @EqualsAndHashCode
 public class CertificateWithdrawDTO {
+
+    private Long certificateId;
+    private String reason;
+
 }
