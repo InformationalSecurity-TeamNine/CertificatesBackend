@@ -95,4 +95,15 @@ public class CertificateController {
         CertificateRequest newRequest = this.certificateService.createRequest(certificateRequest, headers);
         return new ResponseEntity<>(new CertificateRequestDTO(newRequest), HttpStatus.OK);
     }
+
+
+    @PutMapping("/withdraw/{id}")
+    public ResponseEntity<CertificateWithdrawDTO> withdrawCertificate(
+            @PathVariable Long id,
+            @Valid @RequestBody WithdrawReasonDTO withdrawReason,
+            @RequestHeader Map<String, String> headers
+    ){
+
+
+    }
 }
