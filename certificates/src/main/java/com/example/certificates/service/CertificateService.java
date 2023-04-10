@@ -88,6 +88,9 @@ public class CertificateService implements ICertificateService {
         }
         if (issuer != null){
             issuer.setUser(this.certificateRepository.getUserByCertificateId(issuer.getId()));
+            if(!this.isValid(issuer.getId()))
+                throw new InvalidIssuerException("Issuing certificate is invalid.");
+
             validateIssuerEndCertificate(certificateRequest, issuer);
             //validateCertificateEndDate(certificateRequest, issuer);
         }
@@ -129,7 +132,7 @@ public class CertificateService implements ICertificateService {
     }
 
     @Override
-    public boolean isValid(Long id) throws CertificateEncodingException, NoSuchAlgorithmException, InvalidKeySpecException {
+    public boolean isValid(Long id) {
 
         Optional<Certificate> certificate = certificateRepository.findById(id);
         if(certificate.isEmpty())
@@ -267,14 +270,23 @@ public class CertificateService implements ICertificateService {
         }
         return null;
     }
-    private PublicKey convertStringToPublicKey(String key) throws NoSuchAlgorithmException, InvalidKeySpecException {
+    private PublicKey convertStringToPublicKey(String key) {
         byte[] keyBytes = Base64.getDecoder().decode(key);
         X509EncodedKeySpec spec = new X509EncodedKeySpec(keyBytes);
-        KeyFactory keyFactory = KeyFactory.getInstance("RSA");
-        return keyFactory.generatePublic(spec);
+        KeyFactory keyFactory = null;
+        try {
+            keyFactory = KeyFactory.getInstance("RSA");
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException(e);
+        }
+        try {
+            return keyFactory.generatePublic(spec);
+        } catch (InvalidKeySpecException e) {
+            throw new RuntimeException(e);
+        }
     }
 
-    private boolean isStoredCertificateInvalid(Long id) throws CertificateEncodingException, NoSuchAlgorithmException, InvalidKeySpecException {
+    private boolean isStoredCertificateInvalid(Long id){
         Optional<Certificate> certificate = this.certificateRepository.findById(id);
         if(certificate.isEmpty()){
             throw new NonExistingCertificateException("Certificate with that id does not exist");
@@ -286,7 +298,12 @@ public class CertificateService implements ICertificateService {
         if (certificate1 == null){
             return true;
         }
-        byte[] dataToSign = certificate1.getEncoded();
+        byte[] dataToSign = new byte[0];
+        try {
+            dataToSign = certificate1.getEncoded();
+        } catch (CertificateEncodingException e) {
+            throw new RuntimeException(e);
+        }
         byte[] signature = sign(dataToSign, privateKey);
 
         return !verify(dataToSign,signature,convertStringToPublicKey(publicKey));

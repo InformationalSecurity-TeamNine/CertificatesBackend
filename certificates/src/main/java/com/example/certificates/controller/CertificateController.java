@@ -49,7 +49,7 @@ public class CertificateController {
 
     @GetMapping(value = "/valid/{id}")
     public ResponseEntity<Boolean> getCertificateValidation(
-            @PathVariable("id")Long id) throws CertificateEncodingException, NoSuchAlgorithmException, InvalidKeySpecException {
+            @PathVariable("id")Long id){
 
         boolean isValid = this.certificateService.isValid(id);
         return new ResponseEntity<>(isValid, HttpStatus.OK);
