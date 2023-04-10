@@ -142,7 +142,7 @@ public class UserService implements IUserService {
         user.setName(registrationDTO.getName());
         user.setLastTimePasswordChanged(LocalDateTime.now());
         Random random = new Random();
-        String code = String.format("%04d", random.nextInt(1000000));
+        String code = String.format("%05d", random.nextInt(1000000));
         user.setVerification(new Verification(code, LocalDateTime.now().plusDays(3)));
         user.setEmailConfirmed(false);
         user = this.userRepository.save(user);
