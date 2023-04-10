@@ -36,7 +36,7 @@ public class CertificateRequestDTO {
         if(certificateRequest.getParentCertificate() == null){
             this.issuerSN = "no issuer";
         }else{
-            this.issuerSN = certificateRequest.getParentCertificate().getId().toString();
+            this.issuerSN = certificateRequest.getParentCertificate().getSerialNumber();
         }
         this.type = certificateRequest.getCertificateType().toString();
         this.time = certificateRequest.getTime();
