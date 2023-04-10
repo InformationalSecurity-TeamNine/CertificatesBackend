@@ -26,4 +26,5 @@ public interface ICertificateService {
 
     boolean isValid(Long id) throws CertificateEncodingException, NoSuchAlgorithmException, InvalidKeySpecException;
 
+    CertificateWithdrawDTO withdraw(Long id, WithdrawReasonDTO withdrawReason, Map<String, String> headers);
 }

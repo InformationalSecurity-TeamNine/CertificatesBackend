@@ -104,6 +104,9 @@ public class CertificateController {
             @RequestHeader Map<String, String> headers
     ){
 
+        CertificateWithdrawDTO withdraw = this.certificateService.withdraw(id, withdrawReason, headers);
+
+        return new ResponseEntity<>(withdraw, HttpStatus.OK);
 
     }
 }

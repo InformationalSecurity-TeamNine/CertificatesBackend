@@ -135,6 +135,11 @@ public class CertificateService implements ICertificateService {
         return true;
     }
 
+    @Override
+    public CertificateWithdrawDTO withdraw(Long id, WithdrawReasonDTO withdrawReason, Map<String, String> headers) {
+        return null;
+    }
+
     private byte[] sign(byte[] data, PrivateKey privateKey) {
         try {
             // Kreiranje objekta koji nudi funkcionalnost digitalnog potpisivanja
