@@ -5,6 +5,7 @@ import com.example.certificates.dto.*;
 import com.example.certificates.enums.CertificateStatus;
 import com.example.certificates.enums.CertificateType;
 import com.example.certificates.enums.RequestStatus;
+import com.example.certificates.enums.UserRole;
 import com.example.certificates.exceptions.*;
 import com.example.certificates.model.Certificate;
 import com.example.certificates.model.CertificateRequest;
@@ -142,27 +143,44 @@ public class CertificateService implements ICertificateService {
     @Override
     public CertificateWithdrawDTO withdraw(Long id, WithdrawReasonDTO withdrawReason, Map<String, String> headers) {
         Integer userId = this.userRequestValidation.getUserId(headers);
+        String role = this.userRequestValidation.getRoleFromToken(headers);
+
         Optional<User> userOpt = this.userRepository.findById(userId.longValue());
-        if(userOpt.isEmpty()) throw new ("")
+        if(userOpt.isEmpty()) throw new NonExistingUserException("User with given id not found");
 
 
         Optional<Certificate> certificateOpt = this.certificateRepository.findById(id);
         if(certificateOpt.isEmpty()) throw new NonExistingCertificateException("Certificate with the given ID does not exist.");
         Certificate certificate = certificateOpt.get();
+        if(role.toString().equals(UserRole.BASIC_USER.toString())){
+            User user = this.userRepository.getByCertificateId(certificate.getId());
+            if(!Objects.equals(user.getId(), userOpt.get().getId()))
+                throw new NonExistingCertificateException("The certificate with the given id does not exist.");
+
+        }
 
         certificate.setStatus(CertificateStatus.NOT_VALID);
-        this.certificateRepository.save(certificate);
-        withdrawCertificateChain(id);
+        certificate = this.certificateRepository.save(certificate);
+
+        LocalDateTime now = LocalDateTime.now();
         this.certificateWithdrawRepository.save(
                 new CertificateWithdraw(
-
+                        userOpt.get(),
+                        certificate,
+                        now,
+                        withdrawReason.getReason(),
+                        false
                 )
-        )
-
+        );
+        withdrawCertificateChain(id, now, userOpt.get(), withdrawReason.getReason());
+        
         return new CertificateWithdrawDTO(certificate.getId(), withdrawReason.getReason());
     }
 
-    private void withdrawCertificateChain(Long parentCertificateId){
+    private void withdrawCertificateChain(Long parentCertificateId,
+                                          LocalDateTime withdrawTime,
+                                          User user,
+                                          String reason){
         List<Certificate> certificates = this.certificateRepository.findByParentId(parentCertificateId);
         if(certificates.isEmpty())
             return;
@@ -174,9 +192,18 @@ public class CertificateService implements ICertificateService {
             else
             {
                 certificate.setStatus(CertificateStatus.NOT_VALID);
-                this.withdrawCertificateChain(certificate.getId());
+                this.withdrawCertificateChain(certificate.getId(), withdrawTime, user, reason);
             }
             this.certificateRepository.save(certificate);
+            this.certificateWithdrawRepository.save(
+                    new CertificateWithdraw(
+                           user,
+                            certificate,
+                            withdrawTime,
+                            reason,
+                            true
+                    )
+            );
         }
 
     }

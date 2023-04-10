@@ -27,5 +27,13 @@ public class CertificateWithdraw implements Serializable {
 
     private LocalDateTime withdrawnAt;
     private String reason;
+    private boolean isChild;
 
+    public CertificateWithdraw(User user, Certificate certificate, LocalDateTime now, String reason, boolean isChild) {
+        this.user = user;
+        this.certificate = certificate;
+        this.withdrawnAt = now;
+        this.reason = reason;
+        this.isChild = isChild;
+    }
 }
