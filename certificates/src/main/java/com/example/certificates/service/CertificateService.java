@@ -124,7 +124,11 @@ public class CertificateService implements ICertificateService {
         }
         validateIssuer(certificateRequest);
         request.setCertificateType(CertificateType.valueOf(certificateRequest.getType()));
+        if(issuer == null){
+            throw new NonExistingParentCertificateException("Parent with that serial number does not exist");
+        }
         CertificateRequest newRequest = this.certificateRequestRepository.save(request);
+
         if(issuer.getUser().getId() == userId.longValue()){
             this.acceptRequest(newRequest.getId(), authHeader);
         }
