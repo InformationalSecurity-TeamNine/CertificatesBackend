@@ -54,8 +54,14 @@ public class UserController {
         return new ResponseEntity<>(newUser, HttpStatus.OK);
 
     }
+    @PutMapping(value = "/activate/{idActivation}")
+    public ResponseEntity<ErrorResponse> activateUser(@PathVariable("idActivation") String verificationCode) {
+        userService.verifyUser(verificationCode);
+        return new ResponseEntity<>(new ErrorResponse("Account activated!"),HttpStatus.OK);
+    }
+
     @GetMapping(value = "/activate/{idActivation}")
-    public ResponseEntity<ErrorResponse> activatePassenger(@PathVariable("idActivation") String verificationCode) {
+    public ResponseEntity<ErrorResponse> activateUserEmail(@PathVariable("idActivation") String verificationCode) {
         userService.verifyUser(verificationCode);
         return new ResponseEntity<>(new ErrorResponse("Account activated!"),HttpStatus.OK);
     }
@@ -66,6 +72,7 @@ public class UserController {
 
             TokenDTO token = new TokenDTO();
             SecurityUser userDetails = (SecurityUser) this.userService.findByUsername(login.getEmail());
+
 
 
             boolean isEmailConfirmed = this.userService.getIsEmailConfirmed(login.getEmail());
@@ -86,6 +93,7 @@ public class UserController {
 
             return new ResponseEntity<>(token, HttpStatus.OK);
         } catch (Exception e) {
+
             return new ResponseEntity(new ErrorResponseMessage(
                     this.messageSource.getMessage("user.badCredentials", null, Locale.getDefault())
             ), HttpStatus.BAD_REQUEST);

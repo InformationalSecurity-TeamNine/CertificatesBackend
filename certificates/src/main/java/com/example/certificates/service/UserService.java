@@ -1,5 +1,6 @@
 package com.example.certificates.service;
 
+import com.example.certificates.config.TwilioConfiguration;
 import com.example.certificates.dto.RegisteredUserDTO;
 import com.example.certificates.dto.UserDTO;
 import com.example.certificates.enums.UserRole;
@@ -9,6 +10,7 @@ import com.example.certificates.exceptions.NonExistingVerificationCodeException;
 import com.example.certificates.exceptions.UserAlreadyExistsException;
 import com.example.certificates.model.User;
 import com.example.certificates.model.Verification;
+import com.twilio.rest.api.v2010.account.Message;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import com.example.certificates.repository.UserRepository;
@@ -16,26 +18,31 @@ import com.example.certificates.service.interfaces.IUserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.apache.commons.lang3.RandomStringUtils;
 import org.springframework.stereotype.Service;
+import com.twilio.Twilio;
+import com.twilio.type.PhoneNumber;
 
 import javax.mail.MessagingException;
 import javax.mail.internet.MimeMessage;
 import java.io.UnsupportedEncodingException;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Optional;
+import java.util.Random;
 
 @Service
 public class UserService implements IUserService {
     private final UserRepository userRepository;
 
+    private final TwilioConfiguration twilioConfiguration;
+
     private final JavaMailSender mailSender;
 
     @Autowired
-    public UserService(UserRepository userRepository, JavaMailSender mailSender){
+    public UserService(UserRepository userRepository, TwilioConfiguration twilioConfiguration, JavaMailSender mailSender){
         this.userRepository = userRepository;
+        this.twilioConfiguration = twilioConfiguration;
+        System.out.println(twilioConfiguration.getAccountSid());
+        Twilio.init(twilioConfiguration.getAccountSid(), twilioConfiguration.getAuthToken());
         this.mailSender = mailSender;
     }
 
@@ -45,7 +52,16 @@ public class UserService implements IUserService {
         checkValidUserInformation(registrationDTO);
         User user = getUserFromRegistrationDTO(registrationDTO);
         sendVerificationEmail(user);
+        sendSms(user);
         return new RegisteredUserDTO(user);
+    }
+
+    private void sendSms(User user) {
+        Message.creator(
+                        new PhoneNumber(user.getTelephoneNumber()),
+                        new PhoneNumber(twilioConfiguration.getPhoneNumber()),
+                        "Your verification code is: " + user.getVerification().getVerificationCode())
+                .create();
     }
     private void sendVerificationEmail(User user) throws MessagingException, UnsupportedEncodingException {
         String toAddress = user.getEmail();
@@ -125,8 +141,9 @@ public class UserService implements IUserService {
         user.setSurname(registrationDTO.getSurname());
         user.setName(registrationDTO.getName());
         user.setLastTimePasswordChanged(LocalDateTime.now());
-        String randomCode = RandomStringUtils.randomAlphanumeric(64);
-        user.setVerification(new Verification(randomCode, LocalDateTime.now().plusDays(3)));
+        Random random = new Random();
+        String code = String.format("%04d", random.nextInt(1000000));
+        user.setVerification(new Verification(code, LocalDateTime.now().plusDays(3)));
         user.setEmailConfirmed(false);
         user = this.userRepository.save(user);
         return user;
