@@ -8,6 +8,7 @@ import com.example.certificates.enums.RequestStatus;
 import com.example.certificates.exceptions.*;
 import com.example.certificates.model.Certificate;
 import com.example.certificates.model.CertificateRequest;
+import com.example.certificates.model.User;
 import com.example.certificates.repository.CertificateRepository;
 import com.example.certificates.repository.CertificateRequestRepository;
 import com.example.certificates.repository.UserRepository;
@@ -17,7 +18,6 @@ import com.example.certificates.service.interfaces.ICertificateService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.math.BigInteger;
@@ -86,7 +86,8 @@ public class CertificateService implements ICertificateService {
             //validateCertificateEndDate(certificateRequest, issuer);
         }
         CertificateRequest request = new CertificateRequest();
-        request.setIssuer(this.userRepository.findById(Long.valueOf(userId)).get());
+        Optional<User> requestIssuer = this.userRepository.findById(Long.valueOf(userId));
+        requestIssuer.ifPresent(request::setIssuer);
         request.setStatus(RequestStatus.PENDING);
         request.setParentCertificate(issuer);
         request.setTime(certificateRequest.getTime());
@@ -130,9 +131,7 @@ public class CertificateService implements ICertificateService {
 
         if(isExpired(certificate.get())) return false;
         if(isWithdrawn(certificate.get())) return false;
-        if(isStoredCertificateInvalid(id)) return false;
-
-        return true;
+        return !isStoredCertificateInvalid(id);
     }
 
     @Override
@@ -192,8 +191,7 @@ public class CertificateService implements ICertificateService {
             Collection c = cf.generateCertificates(fis);
             Iterator i = c.iterator();
             while (i.hasNext()) {
-                java.security.cert.Certificate cert = (java.security.cert.Certificate) i.next();
-                return cert;
+                return (java.security.cert.Certificate) i.next();
             }
         } catch (FileNotFoundException | CertificateException e) {
             return null;
@@ -204,8 +202,7 @@ public class CertificateService implements ICertificateService {
         byte[] keyBytes = Base64.getDecoder().decode(key);
         X509EncodedKeySpec spec = new X509EncodedKeySpec(keyBytes);
         KeyFactory keyFactory = KeyFactory.getInstance("RSA");
-        PublicKey publicKey = keyFactory.generatePublic(spec);
-        return publicKey;
+        return keyFactory.generatePublic(spec);
     }
 
     private boolean isStoredCertificateInvalid(Long id) throws CertificateEncodingException, NoSuchAlgorithmException, InvalidKeySpecException {

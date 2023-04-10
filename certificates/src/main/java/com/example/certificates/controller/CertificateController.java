@@ -4,12 +4,8 @@ import com.example.certificates.dto.*;
 import com.example.certificates.enums.CertificateType;
 import com.example.certificates.model.CertificateRequest;
 
-import com.example.certificates.dto.AcceptRequestDTO;
-import com.example.certificates.dto.CertificateDTO;
 import com.example.certificates.dto.DeclineReasonDTO;
 import com.example.certificates.dto.DeclineRequestDTO;
-import com.example.certificates.model.Paginated;
-import com.example.certificates.security.UserRequestValidation;
 import com.example.certificates.service.interfaces.ICertificateService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
