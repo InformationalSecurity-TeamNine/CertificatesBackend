@@ -26,5 +26,6 @@ public class CertificateWithdraw implements Serializable {
     private Certificate certificate;
 
     private LocalDateTime withdrawnAt;
+    private String reason;
 
 }
