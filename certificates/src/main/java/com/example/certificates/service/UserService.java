@@ -51,11 +51,11 @@ public class UserService implements IUserService {
         checkValidUserInformation(registrationDTO);
         User user = getUserFromRegistrationDTO(registrationDTO);
         sendVerificationEmail(user);
-        sendSms(user);
+        sendSmsVerification(user);
         return new RegisteredUserDTO(user);
     }
 
-    private void sendSms(User user) {
+    private void sendSmsVerification(User user) {
         Message.creator(
                         new PhoneNumber(user.getTelephoneNumber()),
                         new PhoneNumber(twilioConfiguration.getPhoneNumber()),
@@ -143,6 +143,7 @@ public class UserService implements IUserService {
         this.userRepository.save(user.get());
 
         sendPasswordResetEmail(user.get());
+        sendPasswordResetSms(user.get());
     }
 
     @Override
@@ -162,6 +163,13 @@ public class UserService implements IUserService {
         user.get().setPassword(passwordEncoder.encode(passwordResetDTO.getPassword()));
         this.userRepository.save(user.get());
 
+    }
+    private void sendPasswordResetSms(User user) {
+        Message.creator(
+                        new PhoneNumber(user.getTelephoneNumber()),
+                        new PhoneNumber(twilioConfiguration.getPhoneNumber()),
+                        "Your password reset code is: " + user.getPasswordResetCode().getCode())
+                .create();
     }
 
     private void sendPasswordResetEmail(User user) throws MessagingException, UnsupportedEncodingException {
@@ -184,6 +192,7 @@ public class UserService implements IUserService {
         helper.setText(content, true);
         mailSender.send(message);
     }
+
 
     private User getUserFromRegistrationDTO(UserDTO registrationDTO) {
         User user = new User();
