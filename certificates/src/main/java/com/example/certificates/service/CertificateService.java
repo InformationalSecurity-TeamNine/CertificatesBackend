@@ -344,14 +344,14 @@ public class CertificateService implements ICertificateService {
         Optional<CertificateRequest> request = this.certificateRequestRepository.findById(id);
         if(request.isEmpty()) throw new NonExistingRequestException("The request with the given id doesn't exist");
 
-
+        if (request.get().getStatus()!=RequestStatus.PENDING){
+            throw new RequestAlreadyProcessedException("The request has already been processed");
+        }
         if(userId.longValue() != this.certificateRequestRepository.getIssuerCertificateUserIdByRequestId(request.get().getId())){
             throw new NonExistingRequestException("The request with the given id doesn't exist");
         }
 
-        if (request.get().getStatus()!=RequestStatus.PENDING){
-            throw new RequestAlreadyProcessedException("The request has already been processed");
-        }
+
 
         request.get().setStatus(RequestStatus.DECLINED);
         request.get().setReason(declineReason);

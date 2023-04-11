@@ -19,4 +19,6 @@ public class CertificateRequestResponse {
 
     private CertificateType type;
 
+    private String declineReason;
+
 }
