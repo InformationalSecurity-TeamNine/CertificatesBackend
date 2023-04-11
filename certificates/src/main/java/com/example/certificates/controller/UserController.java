@@ -66,15 +66,15 @@ public class UserController {
 
 
     @PutMapping(value = "/activate/{idActivation}")
-    public ResponseEntity<ErrorResponse> activateUser(@PathVariable("idActivation") String verificationCode) {
+    public ResponseEntity<String> activateUser(@PathVariable("idActivation") String verificationCode) {
         userService.verifyUser(verificationCode);
-        return new ResponseEntity<>(new ErrorResponse("Account activated!"),HttpStatus.OK);
+        return new ResponseEntity<>(("Account activated!"),HttpStatus.OK);
     }
 
     @GetMapping(value = "/activate/{idActivation}")
-    public ResponseEntity<ErrorResponse> activateUserEmail(@PathVariable("idActivation") String verificationCode) {
+    public ResponseEntity<String> activateUserEmail(@PathVariable("idActivation") String verificationCode) {
         userService.verifyUser(verificationCode);
-        return new ResponseEntity<>(new ErrorResponse("Account activated!"),HttpStatus.OK);
+        return new ResponseEntity<>(("Account activated!"),HttpStatus.OK);
     }
 
     @PostMapping("/login")
