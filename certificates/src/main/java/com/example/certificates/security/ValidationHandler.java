@@ -164,5 +164,13 @@ public class ValidationHandler {
     }
 
 
+    @ExceptionHandler(value
+            = CertificateWithdrawnException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public @ResponseBody ErrorResponse
+    handleCertificateWithdrawnException(CertificateWithdrawnException ex)
+    {
+        return new ErrorResponse(ex.getMessage());
+    }
 
 }

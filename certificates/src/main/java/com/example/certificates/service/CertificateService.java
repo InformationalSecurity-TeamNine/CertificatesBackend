@@ -159,6 +159,8 @@ public class CertificateService implements ICertificateService {
         Optional<Certificate> certificateOpt = this.certificateRepository.findById(id);
         if(certificateOpt.isEmpty()) throw new NonExistingCertificateException("Certificate with the given ID does not exist.");
         Certificate certificate = certificateOpt.get();
+        if(certificate.getStatus().toString().equals(CertificateStatus.NOT_VALID.toString()))
+            throw new CertificateWithdrawnException("The certificate with the given id is already withdrawn.");
         if(role.toString().equals(UserRole.BASIC_USER.toString())){
             User user = this.userRepository.getByCertificateId(certificate.getId());
             if(!Objects.equals(user.getId(), userOpt.get().getId()))
