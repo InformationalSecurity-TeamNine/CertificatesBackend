@@ -157,6 +157,16 @@ public class ValidationHandler {
         return new ErrorResponse(ex.getMessage());
     }
 
+    @ExceptionHandler(value
+            = InvalidResetCodeException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public @ResponseBody ErrorResponse
+    handleInvalidResetCodeException(InvalidResetCodeException ex)
+    {
+        return new ErrorResponse(ex.getMessage());
+    }
+
+
 
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<?> handleAccessDeniedException(Exception ex, WebRequest request) {

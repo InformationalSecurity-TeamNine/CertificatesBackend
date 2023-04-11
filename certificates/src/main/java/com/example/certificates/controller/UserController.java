@@ -1,9 +1,6 @@
 package com.example.certificates.controller;
 
-import com.example.certificates.dto.LoginDTO;
-import com.example.certificates.dto.RegisteredUserDTO;
-import com.example.certificates.dto.TokenDTO;
-import com.example.certificates.dto.UserDTO;
+import com.example.certificates.dto.*;
 import com.example.certificates.model.ErrorResponseMessage;
 import com.example.certificates.security.ErrorResponse;
 import com.example.certificates.security.JwtTokenUtil;
@@ -54,6 +51,20 @@ public class UserController {
         return new ResponseEntity<>(newUser, HttpStatus.OK);
 
     }
+    @GetMapping(value = "/{email}/resetPassword")
+    public ResponseEntity<String> sendPasswordResetEmail(@PathVariable("email") String email) throws Exception {
+        userService.sendPasswordResetCode(email);
+        return new ResponseEntity<>("Email with reset code has been sent!",HttpStatus.NO_CONTENT);
+    }
+
+    @PutMapping(value = "/{email}/resetPassword")
+    public ResponseEntity<String> resetPassword(@PathVariable("email") String email, @RequestBody PasswordResetDTO passwordResetDTO) throws Exception {
+        userService.resetPassword(email, passwordResetDTO);
+        return new ResponseEntity<>("Password successfully changed!",HttpStatus.OK);
+    }
+
+
+
     @PutMapping(value = "/activate/{idActivation}")
     public ResponseEntity<ErrorResponse> activateUser(@PathVariable("idActivation") String verificationCode) {
         userService.verifyUser(verificationCode);

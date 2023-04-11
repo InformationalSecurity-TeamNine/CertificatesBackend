@@ -1,13 +1,12 @@
 package com.example.certificates.service;
 
 import com.example.certificates.config.TwilioConfiguration;
+import com.example.certificates.dto.PasswordResetDTO;
 import com.example.certificates.dto.RegisteredUserDTO;
 import com.example.certificates.dto.UserDTO;
 import com.example.certificates.enums.UserRole;
-import com.example.certificates.exceptions.CodeExpiredException;
-import com.example.certificates.exceptions.InvalidRepeatPasswordException;
-import com.example.certificates.exceptions.NonExistingVerificationCodeException;
-import com.example.certificates.exceptions.UserAlreadyExistsException;
+import com.example.certificates.exceptions.*;
+import com.example.certificates.model.ResetCode;
 import com.example.certificates.model.User;
 import com.example.certificates.model.Verification;
 import com.twilio.rest.api.v2010.account.Message;
@@ -131,6 +130,61 @@ public class UserService implements IUserService {
 
     }
 
+    @Override
+    public void sendPasswordResetCode(String email) throws MessagingException, UnsupportedEncodingException {
+
+        Optional<User> user = this.userRepository.findByEmail(email);
+        if (user.isEmpty())
+            throw new NonExistingUserException("User with that email does not exist!");
+
+        Random random = new Random();
+        String code = String.format("%05d", random.nextInt(100000));
+        user.get().setPasswordResetCode(new ResetCode(code, LocalDateTime.now().plusMinutes(15)));
+        this.userRepository.save(user.get());
+
+        sendPasswordResetEmail(user.get());
+    }
+
+    @Override
+    public void resetPassword(String email, PasswordResetDTO passwordResetDTO) {
+
+        Optional<User> user = this.userRepository.findByEmail(email);
+        if (user.isEmpty()) throw new NonExistingUserException("User with that email does not exist!");
+        if (!user.get().getPasswordResetCode().getCode().equals(passwordResetDTO.getCode()) || user.get().getPasswordResetCode().getExpirationDate().isBefore(LocalDateTime.now())) {
+            throw new InvalidResetCodeException("Code is invalid or it expired!");
+
+        }
+        if(!passwordResetDTO.getPassword().equals(passwordResetDTO.getRepeatPassword())) {
+            throw new InvalidRepeatPasswordException("Password and repeat password must be same!");
+        }
+
+        BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+        user.get().setPassword(passwordEncoder.encode(passwordResetDTO.getPassword()));
+        this.userRepository.save(user.get());
+
+    }
+
+    private void sendPasswordResetEmail(User user) throws MessagingException, UnsupportedEncodingException {
+        String toAddress = user.getEmail();
+        String fromAddress = "tim9certificates@gmail.com";
+        String senderName = "Certificate app";
+        String subject = "Reset code for certificate app";
+        String content = "Dear [[name]],<br>"
+                + "Below you can find your code for changing your password:<br>"
+                + "[[CODE]]<br>"
+                + "Have a nice day!,<br>"
+                + "Certificates App.";
+        MimeMessage message = mailSender.createMimeMessage();
+        MimeMessageHelper helper = new MimeMessageHelper(message);
+        helper.setFrom(fromAddress, senderName);
+        helper.setTo(toAddress);
+        helper.setSubject(subject);
+        content = content.replace("[[name]]", user.getName());
+        content = content.replace("[[CODE]]", user.getPasswordResetCode().getCode());
+        helper.setText(content, true);
+        mailSender.send(message);
+    }
+
     private User getUserFromRegistrationDTO(UserDTO registrationDTO) {
         User user = new User();
         user.setEmail(registrationDTO.getEmail());
@@ -142,7 +196,7 @@ public class UserService implements IUserService {
         user.setName(registrationDTO.getName());
         user.setLastTimePasswordChanged(LocalDateTime.now());
         Random random = new Random();
-        String code = String.format("%05d", random.nextInt(1000000));
+        String code = String.format("%05d", random.nextInt(100000));
         user.setVerification(new Verification(code, LocalDateTime.now().plusDays(3)));
         user.setEmailConfirmed(false);
         user = this.userRepository.save(user);
