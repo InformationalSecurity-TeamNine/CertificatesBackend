@@ -186,6 +186,11 @@ public class CertificateService implements ICertificateService {
         return new CertificateWithdrawDTO(certificate.getId(), withdrawReason.getReason());
     }
 
+    @Override
+    public List<WithdrawnCertificateDTO> getWithdrawnCertificates() {
+        return this.certificateWithdrawRepository.findAllWithdrawnCertificates();
+    }
+
     private void withdrawCertificateChain(Long parentCertificateId,
                                           LocalDateTime withdrawTime,
                                           User user,

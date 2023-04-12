@@ -27,4 +27,6 @@ public interface ICertificateService {
     boolean isValid(Long id);
 
     CertificateWithdrawDTO withdraw(Long id, WithdrawReasonDTO withdrawReason, Map<String, String> headers);
+
+    List<WithdrawnCertificateDTO> getWithdrawnCertificates();
 }

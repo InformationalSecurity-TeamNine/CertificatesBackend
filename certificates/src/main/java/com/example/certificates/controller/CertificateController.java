@@ -55,6 +55,15 @@ public class CertificateController {
         return new ResponseEntity<>(isValid, HttpStatus.OK);
     }
 
+    @GetMapping(value = "/withdrawn/")
+    public ResponseEntity<List<WithdrawnCertificateDTO>> getWithdrawnCertificates(
+            ){
+;
+       List<WithdrawnCertificateDTO> certificates = this.certificateService.getWithdrawnCertificates();
+
+        return new ResponseEntity<>(certificates, HttpStatus.OK);
+    }
+
     @PutMapping(value = "/accept-request/{id}")
     public ResponseEntity<String> acceptRequest(@PathVariable Long id,
                                                           @RequestHeader Map<String, String> headers){
