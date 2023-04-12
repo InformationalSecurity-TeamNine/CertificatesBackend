@@ -5,6 +5,7 @@ import com.example.certificates.dto.PasswordResetDTO;
 import com.example.certificates.dto.RegisteredUserDTO;
 import com.example.certificates.dto.UserDTO;
 import com.example.certificates.enums.UserRole;
+import com.example.certificates.enums.VerifyType;
 import com.example.certificates.exceptions.*;
 import com.example.certificates.model.ResetCode;
 import com.example.certificates.model.User;
@@ -52,8 +53,7 @@ public class UserService implements IUserService {
 
         checkValidUserInformation(registrationDTO);
         User user = getUserFromRegistrationDTO(registrationDTO);
-        sendVerificationEmail(user);
-        sendSmsVerification(user);
+
         return new RegisteredUserDTO(user);
     }
 
@@ -139,7 +139,7 @@ public class UserService implements IUserService {
     }
 
     @Override
-    public void sendPasswordResetCode(String email) throws MessagingException, UnsupportedEncodingException {
+    public void sendPasswordResetCode(String email, VerifyType verifyType) throws MessagingException, UnsupportedEncodingException {
 
         Optional<User> user = this.userRepository.findByEmail(email);
         if (user.isEmpty())
@@ -148,10 +148,14 @@ public class UserService implements IUserService {
         Random random = new Random();
         String code = String.format("%05d", random.nextInt(100000));
         user.get().setPasswordResetCode(new ResetCode(code, LocalDateTime.now().plusMinutes(15)));
-        this.userRepository.save(user.get());
+        if (verifyType.equals(VerifyType.EMAIL)){
+            sendPasswordResetEmail(user.get());
+        }
+        else if(verifyType.equals(VerifyType.SMS)){
+            sendPasswordResetSms(user.get());
+        }
 
-        sendPasswordResetEmail(user.get());
-        sendPasswordResetSms(user.get());
+        this.userRepository.save(user.get());
     }
 
     @Override
@@ -208,7 +212,7 @@ public class UserService implements IUserService {
     }
 
 
-    private User getUserFromRegistrationDTO(UserDTO registrationDTO) {
+    private User getUserFromRegistrationDTO(UserDTO registrationDTO) throws MessagingException, UnsupportedEncodingException {
         User user = new User();
         user.setEmail(registrationDTO.getEmail());
         BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
@@ -222,6 +226,12 @@ public class UserService implements IUserService {
         String code = String.format("%05d", random.nextInt(100000));
         user.setVerification(new Verification(code, LocalDateTime.now().plusDays(3)));
         user.setEmailConfirmed(false);
+        if (registrationDTO.getVerifyType().equals(VerifyType.EMAIL)){
+            sendVerificationEmail(user);
+        }
+        else if(registrationDTO.getVerifyType().equals(VerifyType.SMS)){
+            sendSmsVerification(user);
+        }
         user = this.userRepository.save(user);
         return user;
     }

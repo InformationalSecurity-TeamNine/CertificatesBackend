@@ -1,6 +1,7 @@
 package com.example.certificates.controller;
 
 import com.example.certificates.dto.*;
+import com.example.certificates.enums.VerifyType;
 import com.example.certificates.model.ErrorResponseMessage;
 import com.example.certificates.security.ErrorResponse;
 import com.example.certificates.security.JwtTokenUtil;
@@ -51,9 +52,9 @@ public class UserController {
         return new ResponseEntity<>(newUser, HttpStatus.OK);
 
     }
-    @GetMapping(value = "/{email}/resetPassword")
-    public ResponseEntity<String> sendPasswordResetEmail(@PathVariable("email") String email) throws Exception {
-        userService.sendPasswordResetCode(email);
+    @PostMapping(value = "/{email}/resetPassword")
+    public ResponseEntity<String> sendPasswordResetEmail(@PathVariable("email") String email, @RequestBody VerifyTypeResetDTO verifyType) throws Exception {
+        userService.sendPasswordResetCode(email, verifyType.getVerifyType());
         return new ResponseEntity<>("Email with reset code has been sent!",HttpStatus.NO_CONTENT);
     }
 
