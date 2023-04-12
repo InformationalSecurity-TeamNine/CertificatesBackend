@@ -68,12 +68,20 @@ public class CertificateService implements ICertificateService {
     public List<CertificateRequestResponse> getPastRequests(Map<String, String> authHeader) {
 
         String role = this.userRequestValidation.getRoleFromToken(authHeader);
+        List<CertificateRequestResponse> requests = new ArrayList<>();
         if(role.equalsIgnoreCase("admin")){
-            return this.certificateRequestRepository.getAllRequests();
-        }
-        Integer userId = this.userRequestValidation.getUserId(authHeader);
-        return this.certificateRequestRepository.getRequestFromUser(userId.longValue());
+             requests =  this.certificateRequestRepository.getAllRequests();
 
+        }
+        else {
+            Integer userId = this.userRequestValidation.getUserId(authHeader);
+            requests = this.certificateRequestRepository.getRequestFromUser(userId.longValue());
+        }
+        for(CertificateRequestResponse request: requests){
+            if(request.getType()!=CertificateType.ROOT)
+                request.setIssuerUsername(this.certificateRequestRepository.getIssuerByRequestId(request.getId()));
+        }
+        return requests;
     }
 
     @Override

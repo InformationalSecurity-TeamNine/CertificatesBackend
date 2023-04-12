@@ -38,4 +38,5 @@ public interface CertificateRepository extends JpaRepository<Certificate, Long> 
     @Transactional
     @Query("select c from Certificate c where c.issuingCertificate.id=:parentCertificateId")
     List<Certificate> findByParentId(Long parentCertificateId);
+
 }
