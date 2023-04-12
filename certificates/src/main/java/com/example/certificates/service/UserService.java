@@ -56,11 +56,17 @@ public class UserService implements IUserService {
     }
 
     private void sendSmsVerification(User user) {
-        Message.creator(
-                        new PhoneNumber(user.getTelephoneNumber()),
-                        new PhoneNumber(twilioConfiguration.getPhoneNumber()),
-                        "Your verification code is: " + user.getVerification().getVerificationCode())
-                .create();
+        try {
+            Message.creator(
+                            new PhoneNumber(user.getTelephoneNumber()),
+                            new PhoneNumber(twilioConfiguration.getPhoneNumber()),
+                            "Your verification code is: " + user.getVerification().getVerificationCode())
+                    .create();
+        }
+        catch (com.twilio.exception.ApiException ex)
+        {
+            throw new InvalidPhoneException("Can't send message if phone is not verified and valid!");
+        }
     }
     private void sendVerificationEmail(User user) throws MessagingException, UnsupportedEncodingException {
         String toAddress = user.getEmail();

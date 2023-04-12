@@ -166,6 +166,15 @@ public class ValidationHandler {
         return new ErrorResponse(ex.getMessage());
     }
 
+    @ExceptionHandler(value
+            = InvalidPhoneException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public @ResponseBody ErrorResponse
+    handleInvalidPhoneException(InvalidPhoneException ex)
+    {
+        return new ErrorResponse(ex.getMessage());
+    }
+
 
 
     @ExceptionHandler(AccessDeniedException.class)
