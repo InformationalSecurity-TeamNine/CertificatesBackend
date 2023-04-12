@@ -1,5 +1,6 @@
 package com.example.certificates.dto;
 
+import com.example.certificates.enums.VerifyType;
 import com.example.certificates.model.User;
 import lombok.*;
 import org.hibernate.validator.constraints.Length;
@@ -45,6 +46,8 @@ public class UserDTO {
     @NotEmpty(message = "{required}")
     @Pattern(regexp = "^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[#?!@$%^&*-]).{8,}$" , message = "{invalidPasswordFormat}")
     private String repeatPassword;
+
+    private VerifyType verifyType;
 
     public UserDTO(User user){
         this.name = user.getName();

@@ -46,6 +46,7 @@ public class WebSecurityConfiguration {
                 .antMatchers("/api/user/register").permitAll()
                 .antMatchers("/api/user/login").permitAll()
                 .antMatchers("/api/user/activate/*").permitAll()
+                .antMatchers("/api/user/**").permitAll()
 //                .antMatchers(HttpMethod.GET, "/api/user/{id}/resetPassword").permitAll()
 //                .antMatchers(HttpMethod.PUT, "/api/user/{id}/resetPassword").permitAll()
                 .antMatchers("/api/**").authenticated()
