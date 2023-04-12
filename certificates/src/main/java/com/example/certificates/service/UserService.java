@@ -10,6 +10,7 @@ import com.example.certificates.model.ResetCode;
 import com.example.certificates.model.User;
 import com.example.certificates.model.Verification;
 import com.twilio.rest.api.v2010.account.Message;
+import io.github.cdimascio.dotenv.Dotenv;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import com.example.certificates.repository.UserRepository;
@@ -30,6 +31,7 @@ import java.util.Random;
 
 @Service
 public class UserService implements IUserService {
+
     private final UserRepository userRepository;
 
     private final TwilioConfiguration twilioConfiguration;
@@ -40,8 +42,8 @@ public class UserService implements IUserService {
     public UserService(UserRepository userRepository, TwilioConfiguration twilioConfiguration, JavaMailSender mailSender){
         this.userRepository = userRepository;
         this.twilioConfiguration = twilioConfiguration;
-        System.out.println(twilioConfiguration.getAccountSid());
-        Twilio.init(twilioConfiguration.getAccountSid(), twilioConfiguration.getAuthToken());
+        Dotenv dotenv = Dotenv.load();
+        Twilio.init(dotenv.get("TWILIO_ACCOUNT_SID"), dotenv.get("TWILIO_AUTH_TOKEN"));
         this.mailSender = mailSender;
     }
 
@@ -171,11 +173,17 @@ public class UserService implements IUserService {
 
     }
     private void sendPasswordResetSms(User user) {
-        Message.creator(
-                        new PhoneNumber(user.getTelephoneNumber()),
-                        new PhoneNumber(twilioConfiguration.getPhoneNumber()),
-                        "Your password reset code is: " + user.getPasswordResetCode().getCode())
-                .create();
+        try {
+            Message.creator(
+                            new PhoneNumber(user.getTelephoneNumber()),
+                            new PhoneNumber(twilioConfiguration.getPhoneNumber()),
+                            "Your password reset code is: " + user.getPasswordResetCode().getCode())
+                    .create();
+        }
+        catch (com.twilio.exception.ApiException ex)
+        {
+            throw new InvalidPhoneException("Can't send message if phone is not verified and valid!");
+        }
     }
 
     private void sendPasswordResetEmail(User user) throws MessagingException, UnsupportedEncodingException {
