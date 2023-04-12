@@ -1,9 +1,7 @@
 package com.example.certificates.controller;
 
-import com.example.certificates.dto.LoginDTO;
-import com.example.certificates.dto.RegisteredUserDTO;
-import com.example.certificates.dto.TokenDTO;
-import com.example.certificates.dto.UserDTO;
+import com.example.certificates.dto.*;
+import com.example.certificates.enums.VerifyType;
 import com.example.certificates.model.ErrorResponseMessage;
 import com.example.certificates.security.ErrorResponse;
 import com.example.certificates.security.JwtTokenUtil;
@@ -54,16 +52,30 @@ public class UserController {
         return new ResponseEntity<>(newUser, HttpStatus.OK);
 
     }
+    @PostMapping(value = "/{email}/resetPassword")
+    public ResponseEntity<String> sendPasswordResetEmail(@PathVariable("email") String email, @RequestBody VerifyTypeResetDTO verifyType) throws Exception {
+        userService.sendPasswordResetCode(email, verifyType.getVerifyType());
+        return new ResponseEntity<>("Email with reset code has been sent!",HttpStatus.NO_CONTENT);
+    }
+
+    @PutMapping(value = "/{email}/resetPassword")
+    public ResponseEntity<String> resetPassword(@PathVariable("email") String email, @RequestBody PasswordResetDTO passwordResetDTO) throws Exception {
+        userService.resetPassword(email, passwordResetDTO);
+        return new ResponseEntity<>("Password successfully changed!",HttpStatus.OK);
+    }
+
+
+
     @PutMapping(value = "/activate/{idActivation}")
-    public ResponseEntity<ErrorResponse> activateUser(@PathVariable("idActivation") String verificationCode) {
+    public ResponseEntity<String> activateUser(@PathVariable("idActivation") String verificationCode) {
         userService.verifyUser(verificationCode);
-        return new ResponseEntity<>(new ErrorResponse("Account activated!"),HttpStatus.OK);
+        return new ResponseEntity<>(("Account activated!"),HttpStatus.OK);
     }
 
     @GetMapping(value = "/activate/{idActivation}")
-    public ResponseEntity<ErrorResponse> activateUserEmail(@PathVariable("idActivation") String verificationCode) {
+    public ResponseEntity<String> activateUserEmail(@PathVariable("idActivation") String verificationCode) {
         userService.verifyUser(verificationCode);
-        return new ResponseEntity<>(new ErrorResponse("Account activated!"),HttpStatus.OK);
+        return new ResponseEntity<>(("Account activated!"),HttpStatus.OK);
     }
 
     @PostMapping("/login")
