@@ -220,7 +220,7 @@ public class CertificateService implements ICertificateService {
             return;
 
         for(Certificate certificate:certificates){
-
+            if(certificate.getStatus().equals(CertificateStatus.NOT_VALID)) continue;
             if(certificate.getType() == CertificateType.END)
                 certificate.setStatus(CertificateStatus.NOT_VALID);
             else
