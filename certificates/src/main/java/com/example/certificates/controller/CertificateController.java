@@ -2,24 +2,33 @@ package com.example.certificates.controller;
 
 import com.example.certificates.dto.*;
 import com.example.certificates.enums.CertificateType;
+import com.example.certificates.exceptions.NonExistingCertificateException;
+import com.example.certificates.model.Certificate;
 import com.example.certificates.model.CertificateRequest;
 
 import com.example.certificates.dto.DeclineReasonDTO;
 import com.example.certificates.dto.DeclineRequestDTO;
 import com.example.certificates.service.interfaces.ICertificateService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.InputStreamResource;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.InputStream;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateEncodingException;
 import java.security.spec.InvalidKeySpecException;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 
 @CrossOrigin
 @RestController
@@ -113,5 +122,31 @@ public class CertificateController {
 
         return new ResponseEntity<>(withdraw, HttpStatus.OK);
 
+    }
+
+
+    @GetMapping("download/{id}")
+    public ResponseEntity<InputStreamResource> downloadCertificate(@PathVariable Long id){
+
+        String fileName = this.certificateService.findCertificateFileName(id);
+
+
+        File file = new File(fileName);
+        InputStream inputStream = null;
+
+        try {
+            inputStream = new FileInputStream(file);
+        } catch (FileNotFoundException e) {
+            return null;
+        }
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.add("Content-Disposition", "attachment; filename=" + file.getName());
+
+        return ResponseEntity.ok()
+                .headers(headers)
+                .contentLength(file.length())
+                .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                .body(new InputStreamResource(inputStream));
     }
 }
