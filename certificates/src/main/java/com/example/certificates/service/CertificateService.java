@@ -156,6 +156,18 @@ public class CertificateService implements ICertificateService {
     }
 
     @Override
+    public String findCertificateFileName(Long id) {
+        Optional<Certificate> certificate = certificateRepository.findById(id);
+        if(certificate.isEmpty())
+            throw new NonExistingCertificateException("Certificate with the given ID does not exist.");
+
+        String serialNumber = certificate.get().getSerialNumber();
+        String fileName = "certs/" + new BigInteger(serialNumber.replace("-", ""), 16) + ".crt";
+
+        return fileName;
+    }
+
+    @Override
     public CertificateWithdrawDTO withdraw(Long id, WithdrawReasonDTO withdrawReason, Map<String, String> headers) {
         Integer userId = this.userRequestValidation.getUserId(headers);
         String role = this.userRequestValidation.getRoleFromToken(headers);
