@@ -16,19 +16,17 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import javax.validation.Valid;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.InputStream;
-import java.security.NoSuchAlgorithmException;
+import java.io.*;
+import java.security.*;
 import java.security.cert.CertificateEncodingException;
+import java.security.cert.CertificateException;
+import java.security.cert.CertificateFactory;
+import java.security.cert.X509Certificate;
 import java.security.spec.InvalidKeySpecException;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 
 @CrossOrigin
 @RestController
@@ -149,4 +147,25 @@ public class CertificateController {
                 .contentType(MediaType.APPLICATION_OCTET_STREAM)
                 .body(new InputStreamResource(inputStream));
     }
+
+    @PostMapping("validate-upload")
+    public boolean validateUploadedCertificate(@RequestParam MultipartFile file){
+
+        X509Certificate certX509 = this.certificateService.getX509CertificateFromFile(file);
+        if(certX509 == null) return false;
+
+        Certificate cert = this.certificateService.getCertificateFromX509Certificate(certX509);
+        if(cert == null) return false;
+
+        boolean isValid = this.certificateService.isValid(cert.getId());
+        boolean isValidUploaded = this.certificateService.isUploadedInvalid(certX509, cert);
+
+
+
+        System.out.println("Da li je validan na serveru:" + isValid);
+        System.out.println("Da li je uploaded validan:" + isValidUploaded);
+        return (isValidUploaded && isValid);
+    }
+
+
 }

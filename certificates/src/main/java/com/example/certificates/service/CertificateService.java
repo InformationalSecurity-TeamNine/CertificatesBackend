@@ -20,14 +20,18 @@ import com.example.certificates.service.interfaces.ICertificateGeneratorService;
 import com.example.certificates.service.interfaces.ICertificateService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
 import java.math.BigInteger;
 import java.security.*;
 import java.security.cert.CertificateEncodingException;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
+import java.security.cert.X509Certificate;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.X509EncodedKeySpec;
 import java.time.LocalDateTime;
@@ -166,6 +170,8 @@ public class CertificateService implements ICertificateService {
 
         return fileName;
     }
+
+
 
     @Override
     public CertificateWithdrawDTO withdraw(Long id, WithdrawReasonDTO withdrawReason, Map<String, String> headers) {
@@ -317,12 +323,73 @@ public class CertificateService implements ICertificateService {
         }
     }
 
+    @Override
+    public X509Certificate getX509CertificateFromFile(MultipartFile file) {
+        InputStream inputStream;
+        try {
+            inputStream = file.getInputStream();
+        } catch (IOException e) {
+            return null;
+        }
+
+        CertificateFactory factory;
+        X509Certificate cert;
+        try {
+            factory = CertificateFactory.getInstance("X.509");
+            cert = (X509Certificate) factory.generateCertificate(inputStream);
+        } catch (CertificateException e) {
+            return null;
+        }
+
+        return cert;
+
+    }
+
+    @Override
+    public Certificate getCertificateFromX509Certificate(X509Certificate certX509){
+//        System.out.println("Ovo je uneti SN: " + cert.getSerialNumber().toString());
+//        System.out.println("Ovo je vraceni unatrag: " + cert.getSerialNumber().toString(16));
+
+        StringBuilder sb = new StringBuilder(certX509.getSerialNumber().toString(16));
+
+        sb.insert(8, "-");
+        sb.insert(13, "-");
+        sb.insert(18, "-");
+        sb.insert(23, "-");
+
+        String modifiedString = sb.toString();
+//        System.out.println("Ovo je krajnji:" + modifiedString);
+
+        Certificate cert = this.certificateRepository.findByIssuerSN(modifiedString);
+        return cert;
+    }
+
+    @Override
+    public boolean isUploadedInvalid(X509Certificate certX509, Certificate cert) {
+
+        String publicKey = cert.getPublicKey();
+        String sn = cert.getSerialNumber();
+        PrivateKey privateKey = this.certificateGeneratorService.getPrivateKey(sn);
+
+        byte[] dataToSign = new byte[0];
+        try{
+            dataToSign = certX509.getEncoded();
+        }catch (CertificateEncodingException e){
+            throw new RuntimeException(e);
+        }
+
+        byte[] signature = sign(dataToSign, privateKey);
+
+        return verify(dataToSign, signature, convertStringToPublicKey(publicKey));
+    }
+
     private boolean isStoredCertificateInvalid(Long id){
         Optional<Certificate> certificate = this.certificateRepository.findById(id);
         if(certificate.isEmpty()){
             throw new NonExistingCertificateException("Certificate with that id does not exist");
         }
         String publicKey = certificate.get().getPublicKey();
+
         String sn = certificate.get().getSerialNumber();
         PrivateKey privateKey = this.certificateGeneratorService.getPrivateKey(sn);
         java.security.cert.Certificate certificate1 = readFromBinEncFile(sn);
@@ -335,7 +402,9 @@ public class CertificateService implements ICertificateService {
         } catch (CertificateEncodingException e) {
             throw new RuntimeException(e);
         }
+
         byte[] signature = sign(dataToSign, privateKey);
+
 
         return !verify(dataToSign,signature,convertStringToPublicKey(publicKey));
     }
