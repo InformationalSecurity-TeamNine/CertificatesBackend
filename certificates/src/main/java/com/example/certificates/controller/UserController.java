@@ -83,7 +83,7 @@ public class UserController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<String> logIn(@Valid @RequestBody LoginDTO login) {
+    public ResponseEntity<String> logIn(@Valid @RequestBody LoginDTO login) throws MessagingException, UnsupportedEncodingException {
         try {
 
             Authentication authentication =
@@ -92,21 +92,21 @@ public class UserController {
                                     login.getPassword()));
 
             SecurityContextHolder.getContext().setAuthentication(authentication);
-            boolean isEmailConfirmed = this.userService.getIsEmailConfirmed(login.getEmail());
-            if(!isEmailConfirmed){
-                return new ResponseEntity(new ErrorResponseMessage(
-                        this.messageSource.getMessage("user.emailNotConfirmed", null, Locale.getDefault())
-                ), HttpStatus.BAD_REQUEST);
-            }
-
-            userService.sendLoginVerification(login.getEmail(), login.getType());
-            return new ResponseEntity<>(("Succesfully logged in!"), HttpStatus.OK);
         } catch (Exception e) {
 
             return new ResponseEntity(new ErrorResponseMessage(
                     this.messageSource.getMessage("user.badCredentials", null, Locale.getDefault())
             ), HttpStatus.BAD_REQUEST);
         }
+            boolean isEmailConfirmed = this.userService.getIsEmailConfirmed(login.getEmail());
+            if(!isEmailConfirmed){
+                return new ResponseEntity(new ErrorResponseMessage(
+                        this.messageSource.getMessage("user.emailNotConfirmed", null, Locale.getDefault())
+                ), HttpStatus.BAD_REQUEST);
+            }
+            userService.sendLoginVerification(login.getEmail(), login.getType());
+            return new ResponseEntity<>(("Succesfully sent login validation code!"), HttpStatus.OK);
+
 
     }
 

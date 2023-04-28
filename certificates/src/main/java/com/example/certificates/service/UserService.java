@@ -201,7 +201,6 @@ public class UserService implements IUserService {
     public void loginVerify(String email, LoginVerifyCodeDTO code) {
         Optional<User> user = this.userRepository.findByEmail(email);
         if (user.isEmpty()) throw new NonExistingUserException("User with that email does not exist!");
-        System.out.println(user.get().getLoginVerification().getVerificationCode() + "-------------------------------------------" + code);
         if (!user.get().getLoginVerification().getVerificationCode().equals(code.getCode()) || user.get().getLoginVerification().getExpirationDate().isBefore(LocalDateTime.now())) {
             throw new InvalidResetCodeException("Code is invalid or it expired!");
         }
