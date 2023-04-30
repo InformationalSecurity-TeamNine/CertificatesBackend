@@ -18,6 +18,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.transaction.Transactional;
 import javax.validation.Valid;
 import java.io.*;
 import java.security.*;
@@ -148,23 +149,26 @@ public class CertificateController {
                 .body(new InputStreamResource(inputStream));
     }
 
+    @Transactional
     @PostMapping("validate-upload")
-    public boolean validateUploadedCertificate(@RequestParam MultipartFile file){
+    public ResponseEntity<Boolean> validateUploadedCertificate(@RequestParam MultipartFile file){
+
+
 
         X509Certificate certX509 = this.certificateService.getX509CertificateFromFile(file);
-        if(certX509 == null) return false;
 
         Certificate cert = this.certificateService.getCertificateFromX509Certificate(certX509);
-        if(cert == null) return false;
 
         boolean isValid = this.certificateService.isValid(cert.getId());
-        boolean isValidUploaded = this.certificateService.isUploadedInvalid(certX509, cert);
+        if(!isValid) return new ResponseEntity<>(false, HttpStatus.OK);
 
+        boolean isValidUploaded = this.certificateService.isUploadedInvalid(certX509, cert);
+        if(!isValidUploaded) return new ResponseEntity<>(false, HttpStatus.OK);
 
 
         System.out.println("Da li je validan na serveru:" + isValid);
         System.out.println("Da li je uploaded validan:" + isValidUploaded);
-        return (isValidUploaded && isValid);
+        return new ResponseEntity<>(true, HttpStatus.OK);
     }
 
 

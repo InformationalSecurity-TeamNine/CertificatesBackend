@@ -18,10 +18,12 @@ import com.example.certificates.repository.UserRepository;
 import com.example.certificates.security.UserRequestValidation;
 import com.example.certificates.service.interfaces.ICertificateGeneratorService;
 import com.example.certificates.service.interfaces.ICertificateService;
+import org.hibernate.Hibernate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.transaction.Transactional;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -325,11 +327,25 @@ public class CertificateService implements ICertificateService {
 
     @Override
     public X509Certificate getX509CertificateFromFile(MultipartFile file) {
+
+        if(file.getSize() > 1073741824) {
+            //return false;
+            throw new InvalidFileException("Upladed file is bigger than 1gb");
+        }
+
+        String fileName = file.getOriginalFilename();
+        String fileExtension = fileName.substring(fileName.lastIndexOf(".") + 1).toLowerCase();
+        if(!fileExtension.equals("crt")) {
+           // return false;
+            throw new InvalidFileException("Uploaded file isn't .crt file");
+        }
+
         InputStream inputStream;
         try {
             inputStream = file.getInputStream();
         } catch (IOException e) {
-            return null;
+            //return null;
+            throw new InvalidFileException("File could not be read ");
         }
 
         CertificateFactory factory;
@@ -338,12 +354,14 @@ public class CertificateService implements ICertificateService {
             factory = CertificateFactory.getInstance("X.509");
             cert = (X509Certificate) factory.generateCertificate(inputStream);
         } catch (CertificateException e) {
-            return null;
+            //return null;
+            throw new InvalidFileException("Certificate has been modified");
         }
 
         return cert;
 
     }
+
 
     @Override
     public Certificate getCertificateFromX509Certificate(X509Certificate certX509){
@@ -361,6 +379,7 @@ public class CertificateService implements ICertificateService {
 //        System.out.println("Ovo je krajnji:" + modifiedString);
 
         Certificate cert = this.certificateRepository.findByIssuerSN(modifiedString);
+        if(cert == null) throw new NonExistingCertificateException("The certificate with this SN does not exist");
         return cert;
     }
 
@@ -371,16 +390,41 @@ public class CertificateService implements ICertificateService {
         String sn = cert.getSerialNumber();
         PrivateKey privateKey = this.certificateGeneratorService.getPrivateKey(sn);
 
-        byte[] dataToSign = new byte[0];
-        try{
-            dataToSign = certX509.getEncoded();
-        }catch (CertificateEncodingException e){
+
+
+        PublicKey probaKey = certX509.getPublicKey();
+
+        byte[] probaSignature = certX509.getSignature();
+
+        Signature sig;
+        try {
+            sig = Signature.getInstance(certX509.getSigAlgName());
+        } catch (NoSuchAlgorithmException e) {
             throw new RuntimeException(e);
         }
 
-        byte[] signature = sign(dataToSign, privateKey);
+        try {
+            sig.initVerify(probaKey);
+        } catch (InvalidKeyException e) {
+            throw new RuntimeException(e);
+        }
 
-        return verify(dataToSign, signature, convertStringToPublicKey(publicKey));
+        try {
+            sig.update(certX509.getTBSCertificate());
+        } catch (SignatureException e) {
+            throw new RuntimeException(e);
+        } catch (CertificateEncodingException e) {
+            throw new RuntimeException(e);
+        }
+
+        boolean signatureValid;
+        try {
+            signatureValid = sig.verify(probaSignature);
+        } catch (SignatureException e) {
+            throw new RuntimeException(e);
+        }
+
+        return signatureValid;
     }
 
     private boolean isStoredCertificateInvalid(Long id){
