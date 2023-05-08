@@ -112,6 +112,15 @@ public class ValidationHandler {
         return new ErrorResponse(ex.getMessage());
     }
 
+    @ExceptionHandler(value
+            = InvalidFileException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public @ResponseBody ErrorResponse
+    handleInvalidFileException(InvalidFileException ex)
+    {
+        return new ErrorResponse(ex.getMessage());
+    }
+
 
     @ExceptionHandler(value
             = NonExistingRequestException.class)

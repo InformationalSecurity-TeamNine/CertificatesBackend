@@ -18,16 +18,22 @@ import com.example.certificates.repository.UserRepository;
 import com.example.certificates.security.UserRequestValidation;
 import com.example.certificates.service.interfaces.ICertificateGeneratorService;
 import com.example.certificates.service.interfaces.ICertificateService;
+import org.hibernate.Hibernate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
+import javax.transaction.Transactional;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
 import java.math.BigInteger;
 import java.security.*;
 import java.security.cert.CertificateEncodingException;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
+import java.security.cert.X509Certificate;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.X509EncodedKeySpec;
 import java.time.LocalDateTime;
@@ -166,6 +172,8 @@ public class CertificateService implements ICertificateService {
 
         return fileName;
     }
+
+
 
     @Override
     public CertificateWithdrawDTO withdraw(Long id, WithdrawReasonDTO withdrawReason, Map<String, String> headers) {
@@ -317,12 +325,115 @@ public class CertificateService implements ICertificateService {
         }
     }
 
+    @Override
+    public X509Certificate getX509CertificateFromFile(MultipartFile file) {
+
+        if(file.getSize() > 1073741824) {
+            //return false;
+            throw new InvalidFileException("Upladed file is bigger than 1gb");
+        }
+
+        String fileName = file.getOriginalFilename();
+        String fileExtension = fileName.substring(fileName.lastIndexOf(".") + 1).toLowerCase();
+        if(!fileExtension.equals("crt")) {
+           // return false;
+            throw new InvalidFileException("Uploaded file isn't .crt file");
+        }
+
+        InputStream inputStream;
+        try {
+            inputStream = file.getInputStream();
+        } catch (IOException e) {
+            //return null;
+            throw new InvalidFileException("File could not be read ");
+        }
+
+        CertificateFactory factory;
+        X509Certificate cert;
+        try {
+            factory = CertificateFactory.getInstance("X.509");
+            cert = (X509Certificate) factory.generateCertificate(inputStream);
+        } catch (CertificateException e) {
+            //return null;
+            throw new InvalidFileException("Certificate has been modified");
+        }
+
+        return cert;
+
+    }
+
+
+    @Override
+    public Certificate getCertificateFromX509Certificate(X509Certificate certX509){
+//        System.out.println("Ovo je uneti SN: " + cert.getSerialNumber().toString());
+//        System.out.println("Ovo je vraceni unatrag: " + cert.getSerialNumber().toString(16));
+
+        StringBuilder sb = new StringBuilder(certX509.getSerialNumber().toString(16));
+
+        sb.insert(8, "-");
+        sb.insert(13, "-");
+        sb.insert(18, "-");
+        sb.insert(23, "-");
+
+        String modifiedString = sb.toString();
+//        System.out.println("Ovo je krajnji:" + modifiedString);
+
+        Certificate cert = this.certificateRepository.findByIssuerSN(modifiedString);
+        if(cert == null) throw new NonExistingCertificateException("The certificate with this SN does not exist");
+        return cert;
+    }
+
+    @Override
+    public boolean isUploadedInvalid(X509Certificate certX509, Certificate cert) {
+
+        String publicKey = cert.getPublicKey();
+        String sn = cert.getSerialNumber();
+        PrivateKey privateKey = this.certificateGeneratorService.getPrivateKey(sn);
+
+
+
+        PublicKey probaKey = certX509.getPublicKey();
+
+        byte[] probaSignature = certX509.getSignature();
+
+        Signature sig;
+        try {
+            sig = Signature.getInstance(certX509.getSigAlgName());
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException(e);
+        }
+
+        try {
+            sig.initVerify(probaKey);
+        } catch (InvalidKeyException e) {
+            throw new RuntimeException(e);
+        }
+
+        try {
+            sig.update(certX509.getTBSCertificate());
+        } catch (SignatureException e) {
+            throw new RuntimeException(e);
+        } catch (CertificateEncodingException e) {
+            throw new RuntimeException(e);
+        }
+
+        boolean signatureValid;
+        try {
+            signatureValid = sig.verify(probaSignature);
+        } catch (SignatureException e) {
+            throw new RuntimeException(e);
+        }
+
+        return signatureValid;
+    }
+
     private boolean isStoredCertificateInvalid(Long id){
         Optional<Certificate> certificate = this.certificateRepository.findById(id);
         if(certificate.isEmpty()){
             throw new NonExistingCertificateException("Certificate with that id does not exist");
         }
         String publicKey = certificate.get().getPublicKey();
+
         String sn = certificate.get().getSerialNumber();
         PrivateKey privateKey = this.certificateGeneratorService.getPrivateKey(sn);
         java.security.cert.Certificate certificate1 = readFromBinEncFile(sn);
@@ -335,7 +446,9 @@ public class CertificateService implements ICertificateService {
         } catch (CertificateEncodingException e) {
             throw new RuntimeException(e);
         }
+
         byte[] signature = sign(dataToSign, privateKey);
+
 
         return !verify(dataToSign,signature,convertStringToPublicKey(publicKey));
     }
