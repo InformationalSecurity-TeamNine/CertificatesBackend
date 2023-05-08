@@ -91,6 +91,7 @@ public class CertificateController {
         return new ResponseEntity<>(declineRequest, HttpStatus.OK);
     }
 
+    @Transactional
     @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<CertificateRequestDTO> create(
             @Valid @RequestBody CertificateRequestDTO certificateRequest,

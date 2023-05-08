@@ -123,14 +123,16 @@ public class CertificateService implements ICertificateService {
             }
             request.setCertificateType(CertificateType.valueOf(certificateRequest.getType()));
             CertificateRequest newRequest = this.certificateRequestRepository.save(request);
-            if(request.getParentCertificate() != null && userId.longValue() == request.getParentCertificate().getUser().getId()) {
+
+//            if(request.getParentCertificate() != null && userId.longValue() == request.getParentCertificate().getUser().getId()) {
                 this.acceptRequest(newRequest.getId(), authHeader);
                 newRequest.setStatus(RequestStatus.ACCEPTED);
-            }
-            else if(request.getParentCertificate() == null){
-                this.acceptRequest(newRequest.getId(), authHeader);
-                newRequest.setStatus(RequestStatus.ACCEPTED);
-            }
+           // }
+
+//            else if(request.getParentCertificate() == null){
+//                this.acceptRequest(newRequest.getId(), authHeader);
+//                newRequest.setStatus(RequestStatus.ACCEPTED);
+//            }
             return newRequest;
         }
         if(certificateRequest.getType().toString().equalsIgnoreCase(CertificateType.ROOT.toString())){
@@ -512,7 +514,7 @@ public class CertificateService implements ICertificateService {
                 throw new NonExistingParentCertificateException("Invalid parent Id");
             }
 
-            if (userId.longValue() != this.certificateRequestRepository.getIssuerCertificateUserIdByRequestId(request.get().getId())) {
+            if (!this.userRequestValidation.getRoleFromToken(authHeader).equalsIgnoreCase("admin") && userId.longValue() != this.certificateRequestRepository.getIssuerCertificateUserIdByRequestId(request.get().getId())) {
                 throw new NonExistingRequestException("The request with the given id doesn't exist");
             }
         }
