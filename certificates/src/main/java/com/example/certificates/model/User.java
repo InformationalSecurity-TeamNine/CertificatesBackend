@@ -38,6 +38,12 @@ public class User implements Serializable {
     @Column
     private UserRole role;
 
+    @OneToOne(cascade = {CascadeType.PERSIST}, fetch = FetchType.EAGER)
+    private Verification verification;
+
+    @OneToOne(cascade = {CascadeType.ALL}, fetch = FetchType.EAGER)
+    private ResetCode passwordResetCode;
+
     private boolean isEmailConfirmed;
 
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")

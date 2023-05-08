@@ -19,4 +19,16 @@ public class CertificateRequestResponse {
 
     private CertificateType type;
 
+    private String declineReason;
+    private String issuerUsername;
+
+    public CertificateRequestResponse(Long id, String username, RequestStatus status, CertificateType type, String declineReason){
+        this.id = id;
+        this.username = username;
+        this.status = status;
+        this.declineReason = declineReason;
+        this.type = type;
+        this.issuerUsername = "/";
+    }
+
 }

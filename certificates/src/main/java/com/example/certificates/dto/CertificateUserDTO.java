@@ -1,5 +1,6 @@
 package com.example.certificates.dto;
 
+import com.example.certificates.enums.CertificateStatus;
 import com.example.certificates.enums.CertificateType;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -25,6 +26,7 @@ public class CertificateUserDTO {
     private String serialNumber;
 
     private LocalDateTime validTo;
+    private CertificateStatus status;
 
     public CertificateUserDTO(CertificateDTO certificate){
         this.id = certificate.getId();
@@ -33,6 +35,7 @@ public class CertificateUserDTO {
         this.type = certificate.getType();
         this.serialNumber = certificate.getSerialNumber();
         this.validTo = certificate.getValidTo();
+        status = certificate.getStatus();
     }
 
 }

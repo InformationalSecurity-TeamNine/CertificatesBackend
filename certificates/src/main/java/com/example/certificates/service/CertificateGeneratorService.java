@@ -64,30 +64,7 @@ public class CertificateGeneratorService implements ICertificateGeneratorService
         return null;
     }
 
-    @Override
-    public LocalDateTime getExpirationDate(Certificate parentCertificate, CertificateType type) {
-        if (type == CertificateType.END){
-            if(parentCertificate.getValidTo().isBefore(LocalDateTime.now().plusMonths(3))) {
-                throw new InvalidCertificateEndDateException("Parent certificate is ending soon, can't create!");
-            }
-            return LocalDateTime.now().plusMonths(3);
-        }
-        else {
-            if(parentCertificate.getType() == type){
-                LocalDateTime newDate = parentCertificate.getValidTo().minusMonths(1);
-                if(newDate.isAfter(LocalDateTime.now()))
-                    return parentCertificate.getValidTo().minusMonths(1);
-                else
-                    throw new InvalidCertificateEndDateException("Parent certificate is ending soon, can't create!");
 
-            }
-            if(parentCertificate.getValidTo().isBefore(LocalDateTime.now().plusMonths(6))) {
-                throw new InvalidCertificateEndDateException("Parent certificate is ending soon, can't create!");
-            }
-            return LocalDateTime.now().plusMonths(6);
-        }
-
-    }
 
     @Override
     public Certificate createCertificate(CertificateRequest certificateRequest, KeyPair keyPair) {
@@ -95,13 +72,22 @@ public class CertificateGeneratorService implements ICertificateGeneratorService
         certificate.setValidFrom(LocalDateTime.now());
         Certificate parentCertificate = null;
         if (certificateRequest.getCertificateType() == CertificateType.ROOT){
-            certificate.setValidTo(LocalDateTime.now().plusYears(3));
+            certificate.setValidTo(certificateRequest.getTime());
+            if (certificateRequest.getTime().isBefore(LocalDateTime.now())){
+                throw new InvalidCertificateEndDateException("Certificate expiration date can not be in the past");
+            }
         }else {
             parentCertificate = this.certificateRepository.getParentCertificateByRequestId(certificateRequest.getId());
             User parentIssuer = this.userRepository.getByCertificateId(parentCertificate.getId());
             parentCertificate.setUser(parentIssuer);
             certificate.setIssuingCertificate(parentCertificate);
-            certificate.setValidTo(getExpirationDate(parentCertificate, certificateRequest.getCertificateType()));
+            if (certificateRequest.getTime().isAfter(parentCertificate.getValidTo())){
+                throw new InvalidCertificateEndDateException("Certificate expiration date can not be after parent certificate");
+            }
+            if (certificateRequest.getTime().isBefore(LocalDateTime.now())){
+                throw new InvalidCertificateEndDateException("Certificate expiration date can not be in the past");
+            }
+            certificate.setValidTo(certificateRequest.getTime());
         }
         certificate.setSerialNumber(UUID.randomUUID().toString());
         certificate.setPublicKey(Base64.toBase64String(keyPair.getPublic().getEncoded()));
@@ -115,7 +101,7 @@ public class CertificateGeneratorService implements ICertificateGeneratorService
         certificate.setType(certificateRequest.getCertificateType());
         certificate.setSignatureAlgorithm("SHA256WithRSAEncryption");
         SubjectData subjectData = generateSubjectData(certificate);
-        IssuerData issuerData  = generateIssuerData(certificate, keyPair);
+        IssuerData issuerData  = generateIssuerData(certificate, keyPair, user);
         X509Certificate newCertificate = generateCertificate(subjectData, issuerData);
         certificate = this.certificateRepository.save(certificate);
         saveCertificate(newCertificate);
@@ -155,7 +141,7 @@ public class CertificateGeneratorService implements ICertificateGeneratorService
 
         return new SubjectData(convertByteToPublicKey(certificate.getPublicKey()), builder.build(), certificate.getSerialNumber(), certificate.getValidFrom().toLocalDate(), certificate.getValidTo().toLocalDate());
     }
-    private IssuerData generateIssuerData(Certificate certificate, KeyPair keyPair){
+    private IssuerData generateIssuerData(Certificate certificate, KeyPair keyPair, User user){
         PrivateKey issuerKey;
         X500NameBuilder builder = new X500NameBuilder(BCStyle.INSTANCE);
         if (certificate.getType()!=CertificateType.ROOT) {
@@ -166,6 +152,10 @@ public class CertificateGeneratorService implements ICertificateGeneratorService
         }
         if (certificate.getType() == CertificateType.ROOT)
         {
+            builder.addRDN(BCStyle.CN, user.getEmail());
+            builder.addRDN(BCStyle.SURNAME, user.getSurname());
+            builder.addRDN(BCStyle.GIVENNAME, user.getName());
+            builder.addRDN(BCStyle.UID, String.valueOf(user.getId()));
             issuerKey = keyPair.getPrivate();
         }
         else if (Objects.equals(certificate.getUser().getId(), certificate.getIssuingCertificate().getUser().getId())) {
@@ -196,6 +186,7 @@ public class CertificateGeneratorService implements ICertificateGeneratorService
             throw new RuntimeException(e);
         }
     }
+    @Override
     public PrivateKey getPrivateKey(String certificateSN) {
         try {
 

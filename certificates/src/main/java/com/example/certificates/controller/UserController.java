@@ -1,10 +1,9 @@
 package com.example.certificates.controller;
 
-import com.example.certificates.dto.LoginDTO;
-import com.example.certificates.dto.RegisteredUserDTO;
-import com.example.certificates.dto.TokenDTO;
-import com.example.certificates.dto.UserDTO;
+import com.example.certificates.dto.*;
+import com.example.certificates.enums.VerifyType;
 import com.example.certificates.model.ErrorResponseMessage;
+import com.example.certificates.security.ErrorResponse;
 import com.example.certificates.security.JwtTokenUtil;
 import com.example.certificates.security.SecurityUser;
 import com.example.certificates.service.interfaces.IUserService;
@@ -18,7 +17,10 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
+
+import javax.mail.MessagingException;
 import javax.validation.Valid;
+import java.io.UnsupportedEncodingException;
 import java.util.Locale;
 
 @CrossOrigin
@@ -42,13 +44,38 @@ public class UserController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<RegisteredUserDTO> register(@Valid @RequestBody UserDTO userDTO){
+    public ResponseEntity<RegisteredUserDTO> register(@Valid @RequestBody UserDTO userDTO) throws UnsupportedEncodingException, MessagingException {
 
 
         RegisteredUserDTO newUser = this.userService.register(userDTO);
 
         return new ResponseEntity<>(newUser, HttpStatus.OK);
 
+    }
+    @PostMapping(value = "/{email}/resetPassword")
+    public ResponseEntity<String> sendPasswordResetEmail(@PathVariable("email") String email, @RequestBody VerifyTypeResetDTO verifyType) throws Exception {
+        userService.sendPasswordResetCode(email, verifyType.getVerifyType());
+        return new ResponseEntity<>("Email with reset code has been sent!",HttpStatus.NO_CONTENT);
+    }
+
+    @PutMapping(value = "/{email}/resetPassword")
+    public ResponseEntity<String> resetPassword(@PathVariable("email") String email, @RequestBody PasswordResetDTO passwordResetDTO) throws Exception {
+        userService.resetPassword(email, passwordResetDTO);
+        return new ResponseEntity<>("Password successfully changed!",HttpStatus.OK);
+    }
+
+
+
+    @PutMapping(value = "/activate/{idActivation}")
+    public ResponseEntity<String> activateUser(@PathVariable("idActivation") String verificationCode) {
+        userService.verifyUser(verificationCode);
+        return new ResponseEntity<>(("Account activated!"),HttpStatus.OK);
+    }
+
+    @GetMapping(value = "/activate/{idActivation}")
+    public ResponseEntity<String> activateUserEmail(@PathVariable("idActivation") String verificationCode) {
+        userService.verifyUser(verificationCode);
+        return new ResponseEntity<>(("Account activated!"),HttpStatus.OK);
     }
 
     @PostMapping("/login")
@@ -57,6 +84,7 @@ public class UserController {
 
             TokenDTO token = new TokenDTO();
             SecurityUser userDetails = (SecurityUser) this.userService.findByUsername(login.getEmail());
+
 
 
             boolean isEmailConfirmed = this.userService.getIsEmailConfirmed(login.getEmail());
@@ -77,6 +105,7 @@ public class UserController {
 
             return new ResponseEntity<>(token, HttpStatus.OK);
         } catch (Exception e) {
+
             return new ResponseEntity(new ErrorResponseMessage(
                     this.messageSource.getMessage("user.badCredentials", null, Locale.getDefault())
             ), HttpStatus.BAD_REQUEST);

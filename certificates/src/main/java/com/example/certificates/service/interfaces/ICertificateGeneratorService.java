@@ -5,11 +5,14 @@ import com.example.certificates.model.Certificate;
 import com.example.certificates.model.CertificateRequest;
 
 import java.security.KeyPair;
+import java.security.PrivateKey;
 import java.time.LocalDateTime;
 
 public interface ICertificateGeneratorService {
     public KeyPair generateKeyPair();
-    public LocalDateTime getExpirationDate(Certificate parentCertificate, CertificateType type);
+
 
     public Certificate createCertificate(CertificateRequest certificateRequest, KeyPair keyPair);
+
+    public PrivateKey getPrivateKey(String certificateSN);
 }
