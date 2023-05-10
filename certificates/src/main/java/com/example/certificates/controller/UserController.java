@@ -65,14 +65,6 @@ public class UserController {
         return new ResponseEntity<>("Password successfully changed!",HttpStatus.OK);
     }
 
-
-
-    @PutMapping(value = "/activate/{idActivation}")
-    public ResponseEntity<String> activateUser(@PathVariable("idActivation") String verificationCode) {
-        userService.verifyUser(verificationCode);
-        return new ResponseEntity<>(("Account activated!"),HttpStatus.OK);
-    }
-
     @GetMapping(value = "/activate/{idActivation}")
     public ResponseEntity<String> activateUserEmail(@PathVariable("idActivation") String verificationCode) {
         userService.verifyUser(verificationCode);
