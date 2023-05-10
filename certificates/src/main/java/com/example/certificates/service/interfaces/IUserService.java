@@ -8,10 +8,11 @@ import org.springframework.security.core.userdetails.UserDetails;
 
 
 import javax.mail.MessagingException;
+import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 
 public interface IUserService {
-    RegisteredUserDTO register(UserDTO registrationDTO) throws UnsupportedEncodingException, MessagingException;
+    RegisteredUserDTO register(UserDTO registrationDTO) throws IOException, MessagingException;
 
     UserDetails findByUsername(String username);
 

@@ -10,6 +10,9 @@ import com.example.certificates.exceptions.*;
 import com.example.certificates.model.ResetCode;
 import com.example.certificates.model.User;
 import com.example.certificates.model.Verification;
+import com.sendgrid.helpers.mail.Mail;
+import com.sendgrid.helpers.mail.objects.Content;
+import com.sendgrid.helpers.mail.objects.Email;
 import com.twilio.rest.api.v2010.account.Message;
 import io.github.cdimascio.dotenv.Dotenv;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -25,10 +28,12 @@ import com.twilio.type.PhoneNumber;
 
 import javax.mail.MessagingException;
 import javax.mail.internet.MimeMessage;
+import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.Random;
+import com.sendgrid.*;
 
 @Service
 public class UserService implements IUserService {
@@ -49,7 +54,7 @@ public class UserService implements IUserService {
     }
 
     @Override
-    public RegisteredUserDTO register(UserDTO registrationDTO) throws UnsupportedEncodingException, MessagingException {
+    public RegisteredUserDTO register(UserDTO registrationDTO) throws IOException, MessagingException {
 
         checkValidUserInformation(registrationDTO);
         User user = getUserFromRegistrationDTO(registrationDTO);
@@ -70,32 +75,32 @@ public class UserService implements IUserService {
             throw new InvalidPhoneException("Can't send message if phone is not verified and valid!");
         }
     }
-    private void sendVerificationEmail(User user) throws MessagingException, UnsupportedEncodingException {
-        String toAddress = user.getEmail();
-        String fromAddress = "tim9certificates@gmail.com";
-        String senderName = "Certificate app";
+    private void sendVerificationEmail(User user) throws MessagingException, IOException {
+        Email from = new Email("tim9certificates@gmail.com");
         String subject = "Verify the registration";
-        String content = "Dear [[name]],<br>"
-                + "Please click the link below to verify your registration:<br>"
-                + "<h3><a href=\"[[URL]]\" target=\"_self\">VERIFY</a></h3>"
-                + "Thank you,<br>"
-                + "Certificate app.";
+        Email to = new Email(user.getEmail());
+        Content content = new Content("text/plain", "Dear " + user.getName() + ","
+                + "Please click the link below to verify your registration: \n"
+                + "http://localhost:8082/api/user/activate/" + user.getVerification().getVerificationCode() + "\n"
+                + "Thank you,\n "
+                + "Certificate app.");
+        Mail mail = new Mail(from, subject, to, content);
+        Dotenv dotenv = Dotenv.load();
+        System.out.println(dotenv.get("SENDGRID_API_KEY") + " ----------------------------------------------");
+        SendGrid sg = new SendGrid(dotenv.get("SENDGRID_API_KEY"));
 
-        MimeMessage message = mailSender.createMimeMessage();
-        MimeMessageHelper helper = new MimeMessageHelper(message);
-
-        helper.setFrom(fromAddress, senderName);
-        helper.setTo(toAddress);
-        helper.setSubject(subject);
-
-        content = content.replace("[[name]]", user.getName());
-        String verifyURL = "http://localhost:8082/api/user/activate/" + user.getVerification().getVerificationCode();
-
-        content = content.replace("[[URL]]", verifyURL);
-
-        helper.setText(content, true);
-
-        mailSender.send(message);
+        Request request = new Request();
+        try {
+            request.setMethod(Method.POST);
+            request.setEndpoint("mail/send");
+            request.setBody(mail.build());
+            Response response = sg.api(request);
+            System.out.println(response.getStatusCode());
+            System.out.println(response.getBody());
+            System.out.println(response.getHeaders());
+        } catch (IOException ex) {
+            throw ex;
+        }
     }
 
     private void checkValidUserInformation(UserDTO registrationDTO) {
@@ -212,7 +217,7 @@ public class UserService implements IUserService {
     }
 
 
-    private User getUserFromRegistrationDTO(UserDTO registrationDTO) throws MessagingException, UnsupportedEncodingException {
+    private User getUserFromRegistrationDTO(UserDTO registrationDTO) throws MessagingException, IOException {
         User user = new User();
         user.setEmail(registrationDTO.getEmail());
         BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();

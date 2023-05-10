@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.mail.MessagingException;
 import javax.validation.Valid;
+import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.util.Locale;
 
@@ -44,7 +45,7 @@ public class UserController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<RegisteredUserDTO> register(@Valid @RequestBody UserDTO userDTO) throws UnsupportedEncodingException, MessagingException {
+    public ResponseEntity<RegisteredUserDTO> register(@Valid @RequestBody UserDTO userDTO) throws IOException, MessagingException {
 
 
         RegisteredUserDTO newUser = this.userService.register(userDTO);
