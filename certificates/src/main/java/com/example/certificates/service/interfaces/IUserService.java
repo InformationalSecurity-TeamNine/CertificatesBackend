@@ -20,7 +20,7 @@ public interface IUserService {
 
     void verifyUser(String verificationCode);
 
-    void sendPasswordResetCode(String email, VerifyType verifyType) throws MessagingException, UnsupportedEncodingException;
+    void sendPasswordResetCode(String email, VerifyType verifyType) throws MessagingException, IOException;
 
     void resetPassword(String email, PasswordResetDTO passwordResetDTO);
 }

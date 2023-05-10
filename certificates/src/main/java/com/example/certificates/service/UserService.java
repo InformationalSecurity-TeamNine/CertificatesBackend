@@ -82,11 +82,10 @@ public class UserService implements IUserService {
         Content content = new Content("text/plain", "Dear " + user.getName() + ","
                 + "Please click the link below to verify your registration: \n"
                 + "http://localhost:8082/api/user/activate/" + user.getVerification().getVerificationCode() + "\n"
-                + "Thank you,\n "
+                + "Thank you,\n"
                 + "Certificate app.");
         Mail mail = new Mail(from, subject, to, content);
         Dotenv dotenv = Dotenv.load();
-        System.out.println(dotenv.get("SENDGRID_API_KEY") + " ----------------------------------------------");
         SendGrid sg = new SendGrid(dotenv.get("SENDGRID_API_KEY"));
 
         Request request = new Request();
@@ -95,9 +94,6 @@ public class UserService implements IUserService {
             request.setEndpoint("mail/send");
             request.setBody(mail.build());
             Response response = sg.api(request);
-            System.out.println(response.getStatusCode());
-            System.out.println(response.getBody());
-            System.out.println(response.getHeaders());
         } catch (IOException ex) {
             throw ex;
         }
@@ -144,7 +140,7 @@ public class UserService implements IUserService {
     }
 
     @Override
-    public void sendPasswordResetCode(String email, VerifyType verifyType) throws MessagingException, UnsupportedEncodingException {
+    public void sendPasswordResetCode(String email, VerifyType verifyType) throws MessagingException, IOException {
 
         Optional<User> user = this.userRepository.findByEmail(email);
         if (user.isEmpty())
@@ -195,25 +191,29 @@ public class UserService implements IUserService {
         }
     }
 
-    private void sendPasswordResetEmail(User user) throws MessagingException, UnsupportedEncodingException {
-        String toAddress = user.getEmail();
-        String fromAddress = "tim9certificates@gmail.com";
-        String senderName = "Certificate app";
+    private void sendPasswordResetEmail(User user) throws MessagingException, IOException {
+
+        Email from = new Email("tim9certificates@gmail.com");
         String subject = "Reset code for certificate app";
-        String content = "Dear [[name]],<br>"
-                + "Below you can find your code for changing your password:<br>"
-                + "[[CODE]]<br>"
-                + "Have a nice day!,<br>"
-                + "Certificates App.";
-        MimeMessage message = mailSender.createMimeMessage();
-        MimeMessageHelper helper = new MimeMessageHelper(message);
-        helper.setFrom(fromAddress, senderName);
-        helper.setTo(toAddress);
-        helper.setSubject(subject);
-        content = content.replace("[[name]]", user.getName());
-        content = content.replace("[[CODE]]", user.getPasswordResetCode().getCode());
-        helper.setText(content, true);
-        mailSender.send(message);
+        Email to = new Email(user.getEmail());
+        Content content = new Content("text/plain", "Dear " + user.getName() + ","
+                + "Below you can find your code for changing your password: \n"
+                 + user.getPasswordResetCode().getCode() + "\n"
+                + "Have a nice day!,\n"
+                + "Certificate app.");
+        Mail mail = new Mail(from, subject, to, content);
+        Dotenv dotenv = Dotenv.load();
+        SendGrid sg = new SendGrid(dotenv.get("SENDGRID_API_KEY"));
+
+        Request request = new Request();
+        try {
+            request.setMethod(Method.POST);
+            request.setEndpoint("mail/send");
+            request.setBody(mail.build());
+            Response response = sg.api(request);
+        } catch (IOException ex) {
+            throw ex;
+        }
     }
 
 
