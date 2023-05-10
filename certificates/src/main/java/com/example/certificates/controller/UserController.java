@@ -70,6 +70,12 @@ public class UserController {
         userService.verifyUser(verificationCode);
         return new ResponseEntity<>(("Account activated!"),HttpStatus.OK);
     }
+    @PutMapping(value = "/activate/{idActivation}")
+    public ResponseEntity<String> activateUser(@PathVariable("idActivation") String verificationCode) {
+        userService.verifyUser(verificationCode);
+        return new ResponseEntity<>(("Account activated!"),HttpStatus.OK);
+    }
+
 
     @PostMapping("/login")
     public ResponseEntity<TokenDTO> logIn(@Valid @RequestBody LoginDTO login) {
