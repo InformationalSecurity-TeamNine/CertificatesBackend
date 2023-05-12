@@ -7,6 +7,7 @@ import com.example.certificates.security.ErrorResponse;
 import com.example.certificates.security.JwtTokenUtil;
 import com.example.certificates.security.SecurityUser;
 import com.example.certificates.service.interfaces.IUserService;
+import io.github.cdimascio.dotenv.Dotenv;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.MessageSource;
 import org.springframework.http.HttpStatus;
@@ -16,6 +17,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.client.RestTemplate;
 
 
 import javax.mail.MessagingException;
@@ -35,6 +37,7 @@ public class UserController {
     private JwtTokenUtil jwtTokenUtil;
     @Autowired
     private AuthenticationManager authenticationManager;
+
 
     @Autowired
     public UserController(IUserService userService, MessageSource messageSource){
@@ -64,6 +67,11 @@ public class UserController {
         return new ResponseEntity<>("Password successfully changed!",HttpStatus.OK);
     }
 
+    @PostMapping(value = "/recaptcha")
+    public ResponseEntity<Boolean> validateRecaptcha(@RequestParam("g-recaptcha-response")String recaptcha){
+
+        return new ResponseEntity<>(this.userService.verifyRecaptcha(recaptcha), HttpStatus.OK);
+    }
 
 
     @PutMapping(value = "/activate/{idActivation}")

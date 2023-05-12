@@ -7,11 +7,13 @@ import com.example.certificates.dto.UserDTO;
 import com.example.certificates.enums.UserRole;
 import com.example.certificates.enums.VerifyType;
 import com.example.certificates.exceptions.*;
+import com.example.certificates.model.RecaptchaResponse;
 import com.example.certificates.model.ResetCode;
 import com.example.certificates.model.User;
 import com.example.certificates.model.Verification;
 import com.twilio.rest.api.v2010.account.Message;
 import io.github.cdimascio.dotenv.Dotenv;
+import org.springframework.http.HttpMethod;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import com.example.certificates.repository.UserRepository;
@@ -22,6 +24,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import com.twilio.Twilio;
 import com.twilio.type.PhoneNumber;
+import org.springframework.web.client.RestTemplate;
 
 import javax.mail.MessagingException;
 import javax.mail.internet.MimeMessage;
@@ -39,10 +42,14 @@ public class UserService implements IUserService {
 
     private final JavaMailSender mailSender;
 
+    private final RestTemplate restTempate;
+
+
     @Autowired
-    public UserService(UserRepository userRepository, TwilioConfiguration twilioConfiguration, JavaMailSender mailSender){
+    public UserService(UserRepository userRepository, TwilioConfiguration twilioConfiguration, JavaMailSender mailSender, RestTemplate restTempate){
         this.userRepository = userRepository;
         this.twilioConfiguration = twilioConfiguration;
+        this.restTempate = restTempate;
         Dotenv dotenv = Dotenv.load();
         Twilio.init(dotenv.get("TWILIO_ACCOUNT_SID"), dotenv.get("TWILIO_AUTH_TOKEN"));
         this.mailSender = mailSender;
@@ -176,6 +183,19 @@ public class UserService implements IUserService {
         this.userRepository.save(user.get());
 
     }
+
+    @Override
+    public boolean verifyRecaptcha(String recaptcha) {
+        String url = "https://www.google.com/recaptcha/api/siteverify";
+        Dotenv dotenv = Dotenv.load();
+
+        String params = "?secret="+dotenv.get("RECAPTCHA_KEY")+"&response="+recaptcha;
+        RecaptchaResponse recaptchaResponse = restTempate.exchange(url+params, HttpMethod.POST, null, RecaptchaResponse.class).getBody();
+        if(recaptchaResponse == null)
+            throw new InvalidRecaptchaException("Something went wrong with the recaptcha. Please try again.");
+        return recaptchaResponse.isSuccess();
+    }
+
     private void sendPasswordResetSms(User user) {
         try {
             Message.creator(

@@ -22,4 +22,6 @@ public interface IUserService {
     void sendPasswordResetCode(String email, VerifyType verifyType) throws MessagingException, UnsupportedEncodingException;
 
     void resetPassword(String email, PasswordResetDTO passwordResetDTO);
+
+    boolean verifyRecaptcha(String recaptcha);
 }
