@@ -1,6 +1,7 @@
 package com.example.certificates.service;
 
 import com.example.certificates.config.TwilioConfiguration;
+import com.example.certificates.dto.LoginVerifyCodeDTO;
 import com.example.certificates.dto.PasswordResetDTO;
 import com.example.certificates.dto.RegisteredUserDTO;
 import com.example.certificates.dto.UserDTO;
@@ -176,12 +177,56 @@ public class UserService implements IUserService {
         this.userRepository.save(user.get());
 
     }
+
+    @Override
+    public void sendLoginVerification(String email, VerifyType verifyType) throws MessagingException, UnsupportedEncodingException {
+
+        Optional<User> user = this.userRepository.findByEmail(email);
+        if (user.isEmpty())
+            throw new NonExistingUserException("User with that email does not exist!");
+        Random random = new Random();
+        String code = String.format("%05d", random.nextInt(100000));
+        user.get().setLoginVerification(new Verification(code, LocalDateTime.now().plusMinutes(15)));
+        if (verifyType.equals(VerifyType.EMAIL)){
+            sendLoginVerifyEmail(user.get());
+        }
+        else if(verifyType.equals(VerifyType.SMS)){
+            sendLoginVerifySms(user.get());
+        }
+
+        this.userRepository.save(user.get());
+    }
+
+    @Override
+    public void loginVerify(String email, LoginVerifyCodeDTO code) {
+        Optional<User> user = this.userRepository.findByEmail(email);
+        if (user.isEmpty()) throw new NonExistingUserException("User with that email does not exist!");
+        if (!user.get().getLoginVerification().getVerificationCode().equals(code.getCode()) || user.get().getLoginVerification().getExpirationDate().isBefore(LocalDateTime.now())) {
+            throw new InvalidResetCodeException("Code is invalid or it expired!");
+        }
+
+    }
+
     private void sendPasswordResetSms(User user) {
         try {
             Message.creator(
                             new PhoneNumber(user.getTelephoneNumber()),
                             new PhoneNumber(twilioConfiguration.getPhoneNumber()),
                             "Your password reset code is: " + user.getPasswordResetCode().getCode())
+                    .create();
+        }
+        catch (com.twilio.exception.ApiException ex)
+        {
+            throw new InvalidPhoneException("Can't send message if phone is not verified and valid!");
+        }
+    }
+
+    private void sendLoginVerifySms(User user) {
+        try {
+            Message.creator(
+                            new PhoneNumber(user.getTelephoneNumber()),
+                            new PhoneNumber(twilioConfiguration.getPhoneNumber()),
+                            "Your login verification code is: " + user.getLoginVerification().getVerificationCode())
                     .create();
         }
         catch (com.twilio.exception.ApiException ex)
@@ -207,6 +252,26 @@ public class UserService implements IUserService {
         helper.setSubject(subject);
         content = content.replace("[[name]]", user.getName());
         content = content.replace("[[CODE]]", user.getPasswordResetCode().getCode());
+        helper.setText(content, true);
+        mailSender.send(message);
+    }
+    private void sendLoginVerifyEmail(User user) throws MessagingException, UnsupportedEncodingException {
+        String toAddress = user.getEmail();
+        String fromAddress = "tim9certificates@gmail.com";
+        String senderName = "Certificate app";
+        String subject = "Verify login code for certificate app";
+        String content = "Dear [[name]],<br>"
+                + "Below you can find your code for your login verification:<br>"
+                + "[[CODE]]<br>"
+                + "Have a nice day!,<br>"
+                + "Certificates App.";
+        MimeMessage message = mailSender.createMimeMessage();
+        MimeMessageHelper helper = new MimeMessageHelper(message);
+        helper.setFrom(fromAddress, senderName);
+        helper.setTo(toAddress);
+        helper.setSubject(subject);
+        content = content.replace("[[name]]", user.getName());
+        content = content.replace("[[CODE]]", user.getLoginVerification().getVerificationCode());
         helper.setText(content, true);
         mailSender.send(message);
     }
