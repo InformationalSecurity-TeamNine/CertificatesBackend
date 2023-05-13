@@ -201,4 +201,13 @@ public class ValidationHandler {
         return new ErrorResponse(ex.getMessage());
     }
 
+    @ExceptionHandler(value
+            = InvalidRecaptchaException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public @ResponseBody ErrorResponse
+    handleInvalidRecaptchaException(InvalidRecaptchaException ex)
+    {
+        return new ErrorResponse(ex.getMessage());
+    }
+
 }

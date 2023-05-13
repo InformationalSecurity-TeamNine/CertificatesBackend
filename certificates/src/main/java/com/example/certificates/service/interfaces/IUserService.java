@@ -28,4 +28,6 @@ public interface IUserService {
     void sendLoginVerification(String email, VerifyType verifyType) throws MessagingException, IOException;
 
     void loginVerify(String email, LoginVerifyCodeDTO code);
+
+    boolean verifyRecaptcha(String recaptcha);
 }

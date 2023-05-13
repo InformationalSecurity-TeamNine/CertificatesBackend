@@ -121,4 +121,10 @@ public class UserController {
         return new ResponseEntity<>(token, HttpStatus.OK);
 
     }
+
+    @PostMapping(value = "/recaptcha")
+    public ResponseEntity<Boolean> validateRecaptcha(@RequestParam("g-recaptcha-response")String recaptcha){
+
+        return new ResponseEntity<>(this.userService.verifyRecaptcha(recaptcha), HttpStatus.OK);
+    }
 }
