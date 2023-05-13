@@ -22,6 +22,7 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.mail.MessagingException;
 import javax.validation.Valid;
+import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.time.LocalDateTime;
 import java.util.Locale;
@@ -48,7 +49,7 @@ public class UserController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<RegisteredUserDTO> register(@Valid @RequestBody UserDTO userDTO) throws UnsupportedEncodingException, MessagingException {
+    public ResponseEntity<RegisteredUserDTO> register(@Valid @RequestBody UserDTO userDTO) throws IOException, MessagingException {
 
 
         RegisteredUserDTO newUser = this.userService.register(userDTO);
@@ -68,19 +69,17 @@ public class UserController {
         return new ResponseEntity<>("Password successfully changed!",HttpStatus.OK);
     }
 
-
-
+    @GetMapping(value = "/activate/{idActivation}")
+    public ResponseEntity<String> activateUserEmail(@PathVariable("idActivation") String verificationCode) {
+        userService.verifyUser(verificationCode);
+        return new ResponseEntity<>(("Account activated!"),HttpStatus.OK);
+    }
     @PutMapping(value = "/activate/{idActivation}")
     public ResponseEntity<String> activateUser(@PathVariable("idActivation") String verificationCode) {
         userService.verifyUser(verificationCode);
         return new ResponseEntity<>(("Account activated!"),HttpStatus.OK);
     }
 
-    @GetMapping(value = "/activate/{idActivation}")
-    public ResponseEntity<String> activateUserEmail(@PathVariable("idActivation") String verificationCode) {
-        userService.verifyUser(verificationCode);
-        return new ResponseEntity<>(("Account activated!"),HttpStatus.OK);
-    }
 
     @PostMapping("/login")
     public ResponseEntity<String> logIn(@Valid @RequestBody LoginDTO login) throws MessagingException, UnsupportedEncodingException {

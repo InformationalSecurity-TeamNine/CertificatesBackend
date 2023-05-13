@@ -10,10 +10,11 @@ import org.springframework.security.core.userdetails.UserDetails;
 
 
 import javax.mail.MessagingException;
+import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 
 public interface IUserService {
-    RegisteredUserDTO register(UserDTO registrationDTO) throws UnsupportedEncodingException, MessagingException;
+    RegisteredUserDTO register(UserDTO registrationDTO) throws IOException, MessagingException;
 
     UserDetails findByUsername(String username);
 
@@ -21,7 +22,7 @@ public interface IUserService {
 
     void verifyUser(String verificationCode);
 
-    void sendPasswordResetCode(String email, VerifyType verifyType) throws MessagingException, UnsupportedEncodingException;
+    void sendPasswordResetCode(String email, VerifyType verifyType) throws MessagingException, IOException;
 
     void resetPassword(String email, PasswordResetDTO passwordResetDTO);
     void sendLoginVerification(String email, VerifyType verifyType) throws MessagingException, UnsupportedEncodingException;
