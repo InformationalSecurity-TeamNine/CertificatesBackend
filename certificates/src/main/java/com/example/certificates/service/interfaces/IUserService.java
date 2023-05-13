@@ -25,7 +25,7 @@ public interface IUserService {
     void sendPasswordResetCode(String email, VerifyType verifyType) throws MessagingException, IOException;
 
     void resetPassword(String email, PasswordResetDTO passwordResetDTO);
-    void sendLoginVerification(String email, VerifyType verifyType) throws MessagingException, UnsupportedEncodingException;
+    void sendLoginVerification(String email, VerifyType verifyType) throws MessagingException, IOException;
 
     void loginVerify(String email, LoginVerifyCodeDTO code);
 }

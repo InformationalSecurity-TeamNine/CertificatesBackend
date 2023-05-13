@@ -82,7 +82,7 @@ public class UserController {
 
 
     @PostMapping("/login")
-    public ResponseEntity<String> logIn(@Valid @RequestBody LoginDTO login) throws MessagingException, UnsupportedEncodingException {
+    public ResponseEntity<String> logIn(@Valid @RequestBody LoginDTO login) throws MessagingException, IOException {
         try {
 
             Authentication authentication =
