@@ -3,6 +3,8 @@ package com.example.certificates.controller;
 import com.example.certificates.dto.*;
 import com.example.certificates.enums.VerifyType;
 import com.example.certificates.model.ErrorResponseMessage;
+import com.example.certificates.model.User;
+import com.example.certificates.model.Verification;
 import com.example.certificates.security.ErrorResponse;
 import com.example.certificates.security.JwtTokenUtil;
 import com.example.certificates.security.SecurityUser;
@@ -22,7 +24,9 @@ import javax.mail.MessagingException;
 import javax.validation.Valid;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.time.LocalDateTime;
 import java.util.Locale;
+import java.util.Random;
 
 @CrossOrigin
 @RestController
@@ -78,37 +82,43 @@ public class UserController {
 
 
     @PostMapping("/login")
-    public ResponseEntity<TokenDTO> logIn(@Valid @RequestBody LoginDTO login) {
+    public ResponseEntity<String> logIn(@Valid @RequestBody LoginDTO login) throws MessagingException, UnsupportedEncodingException {
         try {
 
-            TokenDTO token = new TokenDTO();
-            SecurityUser userDetails = (SecurityUser) this.userService.findByUsername(login.getEmail());
-
-
-
-            boolean isEmailConfirmed = this.userService.getIsEmailConfirmed(login.getEmail());
-            if(!isEmailConfirmed){
-                return new ResponseEntity(new ErrorResponseMessage(
-                        this.messageSource.getMessage("user.emailNotConfirmed", null, Locale.getDefault())
-                ), HttpStatus.BAD_REQUEST);
-            }
-
-            String tokenValue = this.jwtTokenUtil.generateToken(userDetails);
-            token.setToken(tokenValue);
             Authentication authentication =
                     this.authenticationManager.authenticate(
                             new UsernamePasswordAuthenticationToken(login.getEmail(),
                                     login.getPassword()));
 
             SecurityContextHolder.getContext().setAuthentication(authentication);
-
-            return new ResponseEntity<>(token, HttpStatus.OK);
         } catch (Exception e) {
 
             return new ResponseEntity(new ErrorResponseMessage(
                     this.messageSource.getMessage("user.badCredentials", null, Locale.getDefault())
             ), HttpStatus.BAD_REQUEST);
         }
+            boolean isEmailConfirmed = this.userService.getIsEmailConfirmed(login.getEmail());
+            if(!isEmailConfirmed){
+                return new ResponseEntity(new ErrorResponseMessage(
+                        this.messageSource.getMessage("user.emailNotConfirmed", null, Locale.getDefault())
+                ), HttpStatus.BAD_REQUEST);
+            }
+            userService.sendLoginVerification(login.getEmail(), login.getType());
+            return new ResponseEntity<>(("Succesfully sent login validation code!"), HttpStatus.OK);
+
+
+    }
+
+    @PostMapping("/login/{email}/verify")
+    public ResponseEntity<TokenDTO> loginVerification(@PathVariable("email") String email, @RequestBody LoginVerifyCodeDTO code){
+
+        userService.loginVerify(email, code);
+        TokenDTO token = new TokenDTO();
+        SecurityUser userDetails = (SecurityUser) this.userService.findByUsername(email);
+        String tokenValue = this.jwtTokenUtil.generateToken(userDetails);
+        token.setToken(tokenValue);
+
+        return new ResponseEntity<>(token, HttpStatus.OK);
 
     }
 }
