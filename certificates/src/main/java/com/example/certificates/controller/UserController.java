@@ -26,6 +26,7 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.time.LocalDateTime;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Random;
 
 @CrossOrigin
@@ -126,5 +127,12 @@ public class UserController {
     public ResponseEntity<Boolean> validateRecaptcha(@RequestParam("g-recaptcha-response")String recaptcha){
 
         return new ResponseEntity<>(this.userService.verifyRecaptcha(recaptcha), HttpStatus.OK);
+    }
+
+
+    @GetMapping(value = "/password-expired/{email}")
+    public ResponseEntity<Boolean> isPasswordDurationValid(@PathVariable("email") String email){
+
+        return new ResponseEntity<>(this.userService.isPasswordDurationValid(email), HttpStatus.OK);
     }
 }

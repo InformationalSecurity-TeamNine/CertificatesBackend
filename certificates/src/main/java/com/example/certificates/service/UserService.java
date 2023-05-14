@@ -12,6 +12,7 @@ import com.example.certificates.model.RecaptchaResponse;
 import com.example.certificates.model.ResetCode;
 import com.example.certificates.model.User;
 import com.example.certificates.model.Verification;
+import com.example.certificates.security.UserRequestValidation;
 import com.sendgrid.helpers.mail.Mail;
 import com.sendgrid.helpers.mail.objects.Content;
 import com.sendgrid.helpers.mail.objects.Email;
@@ -31,6 +32,7 @@ import com.twilio.type.PhoneNumber;
 import javax.mail.MessagingException;
 import java.io.IOException;
 import java.time.LocalDateTime;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
 import com.sendgrid.*;
@@ -45,13 +47,15 @@ public class UserService implements IUserService {
 
     private final JavaMailSender mailSender;
     private final RestTemplate restTempate;
+    private final UserRequestValidation userRequestValidation;
 
 
     @Autowired
-    public UserService(UserRepository userRepository, TwilioConfiguration twilioConfiguration, JavaMailSender mailSender, RestTemplate restTempate){
+    public UserService(UserRepository userRepository, TwilioConfiguration twilioConfiguration, JavaMailSender mailSender, RestTemplate restTempate, UserRequestValidation userRequestValidation){
         this.userRepository = userRepository;
         this.twilioConfiguration = twilioConfiguration;
         this.restTempate = restTempate;
+        this.userRequestValidation = userRequestValidation;
         Dotenv dotenv = Dotenv.load();
         Twilio.init(dotenv.get("TWILIO_ACCOUNT_SID"), dotenv.get("TWILIO_AUTH_TOKEN"));
         this.mailSender = mailSender;
@@ -178,6 +182,7 @@ public class UserService implements IUserService {
 
         BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
         user.get().setPassword(passwordEncoder.encode(passwordResetDTO.getPassword()));
+        user.get().setLastTimePasswordChanged(LocalDateTime.now());
         this.userRepository.save(user.get());
 
     }
@@ -221,6 +226,13 @@ public class UserService implements IUserService {
         if(recaptchaResponse == null)
             throw new InvalidRecaptchaException("Something went wrong with the recaptcha. Please try again.");
         return recaptchaResponse.isSuccess();
+    }
+
+    @Override
+    public boolean isPasswordDurationValid(String email) {
+        Optional<LocalDateTime> time = this.userRepository.findLastTimePasswordChanged(email);
+        if(time.isEmpty()) throw new NonExistingUserException("The user with the given id does not exist.");
+        return LocalDateTime.now().minusMinutes(30).isBefore(time.get());
     }
 
     private void sendPasswordResetSms(User user) {

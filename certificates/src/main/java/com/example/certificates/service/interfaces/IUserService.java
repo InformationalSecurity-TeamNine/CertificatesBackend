@@ -12,6 +12,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import javax.mail.MessagingException;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.util.Map;
 
 public interface IUserService {
     RegisteredUserDTO register(UserDTO registrationDTO) throws IOException, MessagingException;
@@ -30,4 +31,6 @@ public interface IUserService {
     void loginVerify(String email, LoginVerifyCodeDTO code);
 
     boolean verifyRecaptcha(String recaptcha);
+
+    boolean isPasswordDurationValid(String email);
 }
