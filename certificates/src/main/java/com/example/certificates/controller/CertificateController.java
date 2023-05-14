@@ -11,10 +11,7 @@ import com.example.certificates.dto.DeclineRequestDTO;
 import com.example.certificates.service.interfaces.ICertificateService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.InputStreamResource;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -28,6 +25,8 @@ import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.security.spec.InvalidKeySpecException;
 import java.util.*;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 @CrossOrigin
 @RestController
@@ -126,28 +125,26 @@ public class CertificateController {
 
 
     @GetMapping("download/{id}")
-    public ResponseEntity<InputStreamResource> downloadCertificate(@PathVariable Long id){
+    public ResponseEntity<InputStreamResource> downloadCertificate(@PathVariable Long id, @RequestHeader Map<String, String> authHeader){
 
         String fileName = this.certificateService.findCertificateFileName(id);
 
+        String publicPartPath = "certs/" + fileName + ".crt";
+        String privatePartPath = "keys/" + fileName + ".key";
 
-        File file = new File(fileName);
-        InputStream inputStream = null;
 
-        try {
-            inputStream = new FileInputStream(file);
-        } catch (FileNotFoundException e) {
-            return null;
-        }
+        byte[] zipContents = this.certificateService.getZipContents(publicPartPath, privatePartPath, authHeader, id);
 
         HttpHeaders headers = new HttpHeaders();
-        headers.add("Content-Disposition", "attachment; filename=" + file.getName());
+        headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
+        headers.setContentDisposition(ContentDisposition.builder("attachment")
+                .filename("certificate_files.zip")
+                .build());
+        headers.setContentLength(zipContents.length);
 
         return ResponseEntity.ok()
                 .headers(headers)
-                .contentLength(file.length())
-                .contentType(MediaType.APPLICATION_OCTET_STREAM)
-                .body(new InputStreamResource(inputStream));
+                .body(new InputStreamResource(new ByteArrayInputStream(zipContents)));
     }
 
     @Transactional

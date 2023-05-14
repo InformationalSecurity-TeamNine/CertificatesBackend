@@ -41,4 +41,6 @@ public interface ICertificateService {
     Certificate getCertificateFromX509Certificate(X509Certificate certX509);
 
     boolean isUploadedInvalid(X509Certificate certX509, Certificate cert);
+
+    byte[] getZipContents(String publicPartPath, String privatePartPath, Map<String, String> authHeader, Long certificateId);
 }

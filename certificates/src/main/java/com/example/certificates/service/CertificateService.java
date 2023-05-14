@@ -20,14 +20,13 @@ import com.example.certificates.service.interfaces.ICertificateGeneratorService;
 import com.example.certificates.service.interfaces.ICertificateService;
 import org.hibernate.Hibernate;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.transaction.Transactional;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.math.BigInteger;
 import java.security.*;
 import java.security.cert.CertificateEncodingException;
@@ -38,6 +37,8 @@ import java.security.spec.InvalidKeySpecException;
 import java.security.spec.X509EncodedKeySpec;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 @Service
 public class CertificateService implements ICertificateService {
@@ -170,7 +171,7 @@ public class CertificateService implements ICertificateService {
             throw new NonExistingCertificateException("Certificate with the given ID does not exist.");
 
         String serialNumber = certificate.get().getSerialNumber();
-        String fileName = "certs/" + new BigInteger(serialNumber.replace("-", ""), 16) + ".crt";
+        String fileName = new BigInteger(serialNumber.replace("-", ""), 16).toString();
 
         return fileName;
     }
@@ -388,10 +389,7 @@ public class CertificateService implements ICertificateService {
     @Override
     public boolean isUploadedInvalid(X509Certificate certX509, Certificate cert) {
 
-        String publicKey = cert.getPublicKey();
         String sn = cert.getSerialNumber();
-        PrivateKey privateKey = this.certificateGeneratorService.getPrivateKey(sn);
-
 
 
         PublicKey probaKey = certX509.getPublicKey();
@@ -427,6 +425,61 @@ public class CertificateService implements ICertificateService {
         }
 
         return signatureValid;
+    }
+
+    @Override
+    public byte[] getZipContents(String publicPartPath, String privatePartPath, Map<String, String> authHeader, Long certificateId) {
+        Integer userId = this.userRequestValidation.getUserId(authHeader);
+        String role = this.userRequestValidation.getRoleFromToken(authHeader);
+
+        Optional<User> userOpt = this.userRepository.findById(userId.longValue());
+        if(userOpt.isEmpty()) throw new NonExistingUserException("User with given id not found");
+
+
+        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+        ZipOutputStream zipOutputStream = new ZipOutputStream(byteArrayOutputStream);
+
+        try {
+
+            File publicPartFile = new File(publicPartPath);
+            FileInputStream publicPartInputStream = new FileInputStream(publicPartFile);
+            ZipEntry publicPartEntry = new ZipEntry(publicPartFile.getName());
+            zipOutputStream.putNextEntry(publicPartEntry);
+            byte[] publicPartBytes = new byte[1024];
+            int length;
+            while ((length = publicPartInputStream.read(publicPartBytes)) >= 0) {
+                zipOutputStream.write(publicPartBytes, 0, length);
+            }
+            publicPartInputStream.close();
+            zipOutputStream.closeEntry();
+
+            Optional<Certificate> certificate = certificateRepository.findById(certificateId);
+            if(certificate.isEmpty())
+                throw new NonExistingCertificateException("Certificate with the given ID does not exist.");
+
+
+            if(role.equals(UserRole.ADMIN.toString()) || (long)userId == certificate.get().getUser().getId()){
+
+                File privatePartFile = new File(privatePartPath);
+                FileInputStream privatePartInputStream = new FileInputStream(privatePartFile);
+                ZipEntry privatePartEntry = new ZipEntry(privatePartFile.getName());
+                zipOutputStream.putNextEntry(privatePartEntry);
+                byte[] privatePartBytes = new byte[1024];
+                while ((length = privatePartInputStream.read(privatePartBytes)) >= 0) {
+                    zipOutputStream.write(privatePartBytes, 0, length);
+                }
+                privatePartInputStream.close();
+                zipOutputStream.closeEntry();
+
+            }
+
+            zipOutputStream.close();
+
+        } catch (IOException e) {
+            throw new InvalidFileException("Error while creating zip archive");
+        }
+
+        return byteArrayOutputStream.toByteArray();
     }
 
     private boolean isStoredCertificateInvalid(Long id){
