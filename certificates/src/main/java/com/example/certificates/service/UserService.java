@@ -1,17 +1,12 @@
 package com.example.certificates.service;
 
 import com.example.certificates.config.TwilioConfiguration;
-import com.example.certificates.dto.LoginVerifyCodeDTO;
-import com.example.certificates.dto.PasswordResetDTO;
-import com.example.certificates.dto.RegisteredUserDTO;
-import com.example.certificates.dto.UserDTO;
+import com.example.certificates.dto.*;
 import com.example.certificates.enums.UserRole;
 import com.example.certificates.enums.VerifyType;
 import com.example.certificates.exceptions.*;
-import com.example.certificates.model.RecaptchaResponse;
-import com.example.certificates.model.ResetCode;
-import com.example.certificates.model.User;
-import com.example.certificates.model.Verification;
+import com.example.certificates.model.*;
+import com.example.certificates.repository.PastPasswordRepository;
 import com.example.certificates.security.UserRequestValidation;
 import com.sendgrid.helpers.mail.Mail;
 import com.sendgrid.helpers.mail.objects.Content;
@@ -25,6 +20,7 @@ import com.example.certificates.service.interfaces.IUserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import com.twilio.Twilio;
 import com.twilio.type.PhoneNumber;
@@ -32,7 +28,7 @@ import com.twilio.type.PhoneNumber;
 import javax.mail.MessagingException;
 import java.io.IOException;
 import java.time.LocalDateTime;
-import java.util.Map;
+import java.util.List;
 import java.util.Optional;
 import java.util.Random;
 import com.sendgrid.*;
@@ -48,14 +44,17 @@ public class UserService implements IUserService {
     private final JavaMailSender mailSender;
     private final RestTemplate restTempate;
     private final UserRequestValidation userRequestValidation;
-
+    private final PastPasswordRepository pastPasswordRepository;
+    private final PasswordEncoder passwordEncoder;
 
     @Autowired
-    public UserService(UserRepository userRepository, TwilioConfiguration twilioConfiguration, JavaMailSender mailSender, RestTemplate restTempate, UserRequestValidation userRequestValidation){
+    public UserService(UserRepository userRepository, TwilioConfiguration twilioConfiguration, JavaMailSender mailSender, RestTemplate restTempate, UserRequestValidation userRequestValidation, PastPasswordRepository pastPasswordRepository, PasswordEncoder passwordEncoder){
         this.userRepository = userRepository;
         this.twilioConfiguration = twilioConfiguration;
         this.restTempate = restTempate;
         this.userRequestValidation = userRequestValidation;
+        this.pastPasswordRepository = pastPasswordRepository;
+        this.passwordEncoder = passwordEncoder;
         Dotenv dotenv = Dotenv.load();
         Twilio.init(dotenv.get("TWILIO_ACCOUNT_SID"), dotenv.get("TWILIO_AUTH_TOKEN"));
         this.mailSender = mailSender;
@@ -171,19 +170,41 @@ public class UserService implements IUserService {
     public void resetPassword(String email, PasswordResetDTO passwordResetDTO) {
 
         Optional<User> user = this.userRepository.findByEmail(email);
+
         if (user.isEmpty()) throw new NonExistingUserException("User with that email does not exist!");
         if (!user.get().getPasswordResetCode().getCode().equals(passwordResetDTO.getCode()) || user.get().getPasswordResetCode().getExpirationDate().isBefore(LocalDateTime.now())) {
             throw new InvalidResetCodeException("Code is invalid or it expired!");
 
         }
+
         if(!passwordResetDTO.getPassword().equals(passwordResetDTO.getRepeatPassword())) {
             throw new InvalidRepeatPasswordException("Password and repeat password must be same!");
         }
 
+        if(passwordEncoder.matches(passwordResetDTO.getPassword(), user.get().getPassword())) throw new InvalidNewPasswordException("Please enter a different password.");
+
+
         BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
-        user.get().setPassword(passwordEncoder.encode(passwordResetDTO.getPassword()));
+        String encodedPw = passwordEncoder.encode(passwordResetDTO.getPassword());
+        System.out.println("PW FIRST: " + passwordEncoder.encode(passwordResetDTO.getPassword()));
+        System.out.println("PW FIRST: " + user.get().getPassword());
+        this.pastPasswordRepository.save(
+                new PastPasswords(user.get(), user.get().getPassword(), LocalDateTime.now()));
+
+        List<PastPasswordsDTO> passwords = this.pastPasswordRepository.findPastPasswordsByUserId(user.get().getId().longValue());
+        for(PastPasswordsDTO pp: passwords){
+            if(passwordEncoder.matches(passwordResetDTO.getPassword(), pp.getPassword()))throw new InvalidNewPasswordException("Please enter a different password.");
+        }
+
+
+        user.get().setPassword(encodedPw);
         user.get().setLastTimePasswordChanged(LocalDateTime.now());
         this.userRepository.save(user.get());
+
+
+
+
+
 
     }
 

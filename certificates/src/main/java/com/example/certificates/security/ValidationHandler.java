@@ -210,4 +210,13 @@ public class ValidationHandler {
         return new ErrorResponse(ex.getMessage());
     }
 
+    @ExceptionHandler(value
+            = InvalidNewPasswordException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public @ResponseBody ErrorResponse
+    handleInvalidNewPasswordException(InvalidNewPasswordException ex)
+    {
+        return new ErrorResponse(ex.getMessage());
+    }
+
 }

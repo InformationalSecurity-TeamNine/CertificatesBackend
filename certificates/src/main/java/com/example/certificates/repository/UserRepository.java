@@ -29,4 +29,6 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     @Query(value = "select u.lastTimePasswordChanged from User u where u.email=:email")
     Optional<LocalDateTime> findLastTimePasswordChanged(String email);
+
+
 }

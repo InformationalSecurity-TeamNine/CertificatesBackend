@@ -65,7 +65,7 @@ public class UserController {
     }
 
     @PutMapping(value = "/{email}/resetPassword")
-    public ResponseEntity<String> resetPassword(@PathVariable("email") String email, @RequestBody PasswordResetDTO passwordResetDTO) throws Exception {
+    public ResponseEntity<String> resetPassword(@PathVariable("email") String email, @Valid @RequestBody PasswordResetDTO passwordResetDTO) throws Exception {
         userService.resetPassword(email, passwordResetDTO);
         return new ResponseEntity<>("Password successfully changed!",HttpStatus.OK);
     }
