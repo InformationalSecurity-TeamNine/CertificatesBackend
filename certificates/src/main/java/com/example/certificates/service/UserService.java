@@ -181,9 +181,6 @@ public class UserService implements IUserService {
             throw new InvalidRepeatPasswordException("Password and repeat password must be same!");
         }
 
-        if(passwordEncoder.matches(passwordResetDTO.getPassword(), user.get().getPassword())) throw new InvalidNewPasswordException("Please enter a different password.");
-
-
         BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
         String encodedPw = passwordEncoder.encode(passwordResetDTO.getPassword());
         System.out.println("PW FIRST: " + passwordEncoder.encode(passwordResetDTO.getPassword()));
@@ -200,11 +197,6 @@ public class UserService implements IUserService {
         user.get().setPassword(encodedPw);
         user.get().setLastTimePasswordChanged(LocalDateTime.now());
         this.userRepository.save(user.get());
-
-
-
-
-
 
     }
 
