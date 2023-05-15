@@ -1,9 +1,6 @@
 package com.example.certificates.service.interfaces;
 
-import com.example.certificates.dto.LoginVerifyCodeDTO;
-import com.example.certificates.dto.PasswordResetDTO;
-import com.example.certificates.dto.RegisteredUserDTO;
-import com.example.certificates.dto.UserDTO;
+import com.example.certificates.dto.*;
 import com.example.certificates.enums.VerifyType;
 import com.example.certificates.model.User;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -33,4 +30,8 @@ public interface IUserService {
     boolean verifyRecaptcha(String recaptcha);
 
     boolean isPasswordDurationValid(String email);
+
+    Boolean oauthDoesMailExists(OauthUserDTO userDTO);
+
+    RegisteredUserDTO regsterOauth(OauthUserDTO userDTO);
 }
