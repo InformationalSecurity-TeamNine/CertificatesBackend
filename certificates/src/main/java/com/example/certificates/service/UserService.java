@@ -245,7 +245,7 @@ public class UserService implements IUserService {
     public boolean isPasswordDurationValid(String email) {
         Optional<LocalDateTime> time = this.userRepository.findLastTimePasswordChanged(email);
         if(time.isEmpty()) throw new NonExistingUserException("The user with the given id does not exist.");
-        return LocalDateTime.now().minusMinutes(30).isBefore(time.get());
+        return LocalDateTime.now().minusMonths(1).isBefore(time.get());
     }
 
     private void sendPasswordResetSms(User user) {
