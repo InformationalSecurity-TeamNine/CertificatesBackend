@@ -12,12 +12,10 @@ import javax.validation.constraints.NotEmpty;
 @AllArgsConstructor
 @EqualsAndHashCode
 public class OauthUserDTO {
-    @NotEmpty(message = "{required}")
-    @Length(max=25, message = "{maxLength}")
+
     private String name;
 
-    @NotEmpty(message = "{required}")
-    @Length(max=25, message = "{maxLength}")
+
     private String surname;
 
     @Email(message = "{format}")
