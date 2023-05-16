@@ -369,9 +369,10 @@ public class UserService implements IUserService {
         User user = new User();
         user.setEmail(oauthUserDTO.getEmail());
         BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
-        user.setPassword(null);
+
+        user.setPassword(passwordEncoder.encode("SifraSifraSifra123!"));
         user.setRole(UserRole.BASIC_USER);
-        user.setTelephoneNumber(null);
+        user.setTelephoneNumber("+381659715120");
         user.setSurname(oauthUserDTO.getSurname());
         user.setName(oauthUserDTO.getName());
         user.setLastTimePasswordChanged(LocalDateTime.now());
