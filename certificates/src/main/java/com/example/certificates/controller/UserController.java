@@ -21,6 +21,7 @@ import org.springframework.web.bind.annotation.*;
 
 
 import javax.mail.MessagingException;
+import javax.persistence.criteria.Predicate;
 import javax.validation.Valid;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
@@ -51,13 +52,26 @@ public class UserController {
 
     @PostMapping("/register")
     public ResponseEntity<RegisteredUserDTO> register(@Valid @RequestBody UserDTO userDTO) throws IOException, MessagingException {
-
-
         RegisteredUserDTO newUser = this.userService.register(userDTO);
-
         return new ResponseEntity<>(newUser, HttpStatus.OK);
+    }
+
+    @PostMapping("/oauth")
+    public ResponseEntity<Object> oauthSignIn(@Valid @RequestBody OauthUserDTO userDTO){
+        Boolean isRegistered = this.userService.oauthDoesMailExists(userDTO);
+        if (isRegistered){
+            TokenDTO token = new TokenDTO();
+            SecurityUser userDetails = (SecurityUser) this.userService.findByUsername(userDTO.getEmail());
+            String tokenValue = this.jwtTokenUtil.generateToken(userDetails);
+            token.setToken(tokenValue);
+            return new ResponseEntity<>(token, HttpStatus.OK);
+        }else{
+            RegisteredUserDTO newUser = this.userService.regsterOauth(userDTO);
+            return new ResponseEntity<>(newUser, HttpStatus.OK);
+        }
 
     }
+
     @PostMapping(value = "/{email}/resetPassword")
     public ResponseEntity<String> sendPasswordResetEmail(@PathVariable("email") String email, @RequestBody VerifyTypeResetDTO verifyType) throws Exception {
         userService.sendPasswordResetCode(email, verifyType.getVerifyType());

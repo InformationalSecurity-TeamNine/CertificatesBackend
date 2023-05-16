@@ -7,6 +7,7 @@ import com.example.certificates.enums.VerifyType;
 import com.example.certificates.exceptions.*;
 import com.example.certificates.model.*;
 import com.example.certificates.repository.PastPasswordRepository;
+import com.example.certificates.security.SecurityUser;
 import com.example.certificates.security.UserRequestValidation;
 import com.sendgrid.helpers.mail.Mail;
 import com.sendgrid.helpers.mail.objects.Content;
@@ -29,6 +30,7 @@ import javax.mail.MessagingException;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
 import com.sendgrid.*;
@@ -248,6 +250,18 @@ public class UserService implements IUserService {
         return LocalDateTime.now().minusMonths(1).isBefore(time.get());
     }
 
+    @Override
+    public Boolean oauthDoesMailExists(OauthUserDTO oauthUser) {
+        return this.emailExists(oauthUser.getEmail());
+    }
+
+    @Override
+    public RegisteredUserDTO regsterOauth(OauthUserDTO userDTO) {
+        User user = getUserFromOauthUserDTO(userDTO);
+        return new RegisteredUserDTO(user);
+    }
+
+
     private void sendPasswordResetSms(User user) {
         try {
             Message.creator(
@@ -348,6 +362,21 @@ public class UserService implements IUserService {
         else if(registrationDTO.getVerifyType().equals(VerifyType.SMS)){
             sendSmsVerification(user);
         }
+        user = this.userRepository.save(user);
+        return user;
+    }
+    private User getUserFromOauthUserDTO(OauthUserDTO oauthUserDTO){
+        User user = new User();
+        user.setEmail(oauthUserDTO.getEmail());
+        BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+
+        user.setPassword(passwordEncoder.encode("SifraSifraSifra123!"));
+        user.setRole(UserRole.BASIC_USER);
+        user.setTelephoneNumber("+381659715120");
+        user.setSurname(oauthUserDTO.getSurname());
+        user.setName(oauthUserDTO.getName());
+        user.setLastTimePasswordChanged(LocalDateTime.now());
+        user.setEmailConfirmed(true);
         user = this.userRepository.save(user);
         return user;
     }
