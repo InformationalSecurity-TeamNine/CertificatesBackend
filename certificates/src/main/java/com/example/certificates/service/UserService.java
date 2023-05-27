@@ -187,14 +187,24 @@ public class UserService implements IUserService {
         String encodedPw = passwordEncoder.encode(passwordResetDTO.getPassword());
         System.out.println("PW FIRST: " + passwordEncoder.encode(passwordResetDTO.getPassword()));
         System.out.println("PW FIRST: " + user.get().getPassword());
-        this.pastPasswordRepository.save(
-                new PastPasswords(user.get(), user.get().getPassword(), LocalDateTime.now()));
 
+        if(passwordEncoder.matches(passwordResetDTO.getPassword(),user.get().getPassword())){
+            throw new InvalidNewPasswordException("Please enter a different password.");
+        }
         List<PastPasswordsDTO> passwords = this.pastPasswordRepository.findPastPasswordsByUserId(user.get().getId().longValue());
-        for(PastPasswordsDTO pp: passwords){
-            if(passwordEncoder.matches(passwordResetDTO.getPassword(), pp.getPassword()))throw new InvalidNewPasswordException("Please enter a different password.");
+        if(passwords.size() <= 3){
+            for(PastPasswordsDTO pp: passwords){
+                if(passwordEncoder.matches(passwordResetDTO.getPassword(), pp.getPassword()))throw new InvalidNewPasswordException("Please enter a different password.");
+            }
+        }else{
+            List<PastPasswordsDTO> lastPasswords = passwords.subList(passwords.size()-3, passwords.size());
+            for(PastPasswordsDTO pp: lastPasswords){
+                if(passwordEncoder.matches(passwordResetDTO.getPassword(), pp.getPassword()))throw new InvalidNewPasswordException("Please enter a different password.");
+            }
         }
 
+        this.pastPasswordRepository.save(
+                new PastPasswords(user.get(), user.get().getPassword(), LocalDateTime.now()));
 
         user.get().setPassword(encodedPw);
         user.get().setLastTimePasswordChanged(LocalDateTime.now());
@@ -247,7 +257,8 @@ public class UserService implements IUserService {
     public boolean isPasswordDurationValid(String email) {
         Optional<LocalDateTime> time = this.userRepository.findLastTimePasswordChanged(email);
         if(time.isEmpty()) throw new NonExistingUserException("The user with the given id does not exist.");
-        return LocalDateTime.now().minusMonths(1).isBefore(time.get());
+        // optimal change is roughtly 3 months
+        return LocalDateTime.now().minusMonths(3).isBefore(time.get());
     }
 
     @Override

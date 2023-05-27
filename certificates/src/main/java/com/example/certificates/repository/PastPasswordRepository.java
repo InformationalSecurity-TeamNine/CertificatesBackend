@@ -10,6 +10,6 @@ import java.util.List;
 public interface PastPasswordRepository extends JpaRepository<PastPasswords, Long> {
 
     @Query(value = "select new com.example.certificates.dto.PastPasswordsDTO(pp.user.email, pp.password) " +
-            "from PastPasswords pp where pp.user.id=:userId order by pp.timeChanged desc")
+            "from PastPasswords pp where pp.user.id=:userId order by pp.timeChanged asc")
     List<PastPasswordsDTO> findPastPasswordsByUserId(Long userId);
 }
