@@ -9,6 +9,8 @@ import com.example.certificates.model.CertificateRequest;
 import com.example.certificates.dto.DeclineReasonDTO;
 import com.example.certificates.dto.DeclineRequestDTO;
 import com.example.certificates.service.interfaces.ICertificateService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.http.*;
@@ -34,6 +36,7 @@ import java.util.zip.ZipOutputStream;
 public class CertificateController {
 
     private final ICertificateService certificateService;
+    private static final Logger logger = LoggerFactory.getLogger(CertificateController.class);
 
     @Autowired
     public CertificateController(ICertificateService certificateService){
@@ -41,6 +44,7 @@ public class CertificateController {
     }
     @GetMapping
     public ResponseEntity<List<CertificateUserDTO>> getCertificates(){
+        logger.info("Ulogovan korisnik je pokrenuo funkcionalnost za dobavljanje sertifikata");
 
         List<CertificateUserDTO> allCertificates = this.certificateService.getAll();
         return new ResponseEntity<>(allCertificates, HttpStatus.OK);

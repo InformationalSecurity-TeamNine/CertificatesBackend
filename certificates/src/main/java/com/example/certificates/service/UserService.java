@@ -1,6 +1,7 @@
 package com.example.certificates.service;
 
 import com.example.certificates.config.TwilioConfiguration;
+import com.example.certificates.controller.UserController;
 import com.example.certificates.dto.*;
 import com.example.certificates.enums.UserRole;
 import com.example.certificates.enums.VerifyType;
@@ -14,6 +15,8 @@ import com.sendgrid.helpers.mail.objects.Content;
 import com.sendgrid.helpers.mail.objects.Email;
 import com.twilio.rest.api.v2010.account.Message;
 import io.github.cdimascio.dotenv.Dotenv;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpMethod;
 import org.springframework.mail.javamail.JavaMailSender;
 import com.example.certificates.repository.UserRepository;
@@ -48,6 +51,8 @@ public class UserService implements IUserService {
     private final UserRequestValidation userRequestValidation;
     private final PastPasswordRepository pastPasswordRepository;
     private final PasswordEncoder passwordEncoder;
+    private static final Logger logger = LoggerFactory.getLogger(UserService.class);
+
 
     @Autowired
     public UserService(UserRepository userRepository, TwilioConfiguration twilioConfiguration, JavaMailSender mailSender, RestTemplate restTempate, UserRequestValidation userRequestValidation, PastPasswordRepository pastPasswordRepository, PasswordEncoder passwordEncoder){
@@ -111,13 +116,18 @@ public class UserService implements IUserService {
     private void checkValidUserInformation(UserDTO registrationDTO) {
         if(this.emailExists(registrationDTO.getEmail()))
         {
+            logger.error("Neregistrovan korisnik je pokusao da se registruje sa vec postojecim mejlom.");
+
             throw new UserAlreadyExistsException("User with that email already exists!");
         }
         if(this.telephoneNumberExists(registrationDTO.getTelephoneNumber())){
+            logger.error("Neregistrovan korisnik je pokusao da se vec postojecim mobilnim telefonom..");
             throw new UserAlreadyExistsException("User with that telephone number already exists!");
         }
         if(!registrationDTO.getPassword().equals(registrationDTO.getRepeatPassword())){
-           throw new InvalidRepeatPasswordException("The passwords dont match!");
+            logger.error("Neregistrovan korisnik je pokusao da se registruje sa razlicitim lozinkama.");
+
+            throw new InvalidRepeatPasswordException("The passwords dont match!");
         }
     }
 
@@ -173,13 +183,20 @@ public class UserService implements IUserService {
 
         Optional<User> user = this.userRepository.findByEmail(email);
 
-        if (user.isEmpty()) throw new NonExistingUserException("User with that email does not exist!");
+        if (user.isEmpty()) {
+
+            throw new NonExistingUserException("User with that email does not exist!");
+        }
         if (!user.get().getPasswordResetCode().getCode().equals(passwordResetDTO.getCode()) || user.get().getPasswordResetCode().getExpirationDate().isBefore(LocalDateTime.now())) {
+            logger.warn("Kod je nevalidan ili istekao.");
+
             throw new InvalidResetCodeException("Code is invalid or it expired!");
 
         }
 
         if(!passwordResetDTO.getPassword().equals(passwordResetDTO.getRepeatPassword())) {
+            logger.warn("Lozinka i ponovljena lozinka se ne podudaraju");
+
             throw new InvalidRepeatPasswordException("Password and repeat password must be same!");
         }
 
@@ -236,6 +253,8 @@ public class UserService implements IUserService {
         Optional<User> user = this.userRepository.findByEmail(email);
         if (user.isEmpty()) throw new NonExistingUserException("User with that email does not exist!");
         if (!user.get().getLoginVerification().getVerificationCode().equals(code.getCode()) || user.get().getLoginVerification().getExpirationDate().isBefore(LocalDateTime.now())) {
+            logger.warn("Kod za logovanje koji je uneo korisnik je ili nevalidan ili istekao");
+
             throw new InvalidResetCodeException("Code is invalid or it expired!");
         }
 
@@ -248,8 +267,11 @@ public class UserService implements IUserService {
 
         String params = "?secret="+dotenv.get("RECAPTCHA_KEY")+"&response="+recaptcha;
         RecaptchaResponse recaptchaResponse = restTempate.exchange(url+params, HttpMethod.POST, null, RecaptchaResponse.class).getBody();
-        if(recaptchaResponse == null)
+        if(recaptchaResponse == null) {
+            logger.warn("Korisnik nije ispravno uneo recaptchu.");
+
             throw new InvalidRecaptchaException("Something went wrong with the recaptcha. Please try again.");
+        }
         return recaptchaResponse.isSuccess();
     }
 
@@ -269,6 +291,8 @@ public class UserService implements IUserService {
     @Override
     public RegisteredUserDTO regsterOauth(OauthUserDTO userDTO) {
         User user = getUserFromOauthUserDTO(userDTO);
+
+        logger.info("Neulogovan korisnik se uspesno registrovao preko Oauth protokola");
         return new RegisteredUserDTO(user);
     }
 
@@ -374,6 +398,7 @@ public class UserService implements IUserService {
             sendSmsVerification(user);
         }
         user = this.userRepository.save(user);
+
         return user;
     }
     private User getUserFromOauthUserDTO(OauthUserDTO oauthUserDTO){

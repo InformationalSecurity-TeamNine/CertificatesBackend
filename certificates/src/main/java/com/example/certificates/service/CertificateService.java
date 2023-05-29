@@ -1,5 +1,6 @@
 package com.example.certificates.service;
 
+import com.example.certificates.controller.CertificateController;
 import com.example.certificates.dto.*;
 
 import com.example.certificates.enums.CertificateStatus;
@@ -19,6 +20,8 @@ import com.example.certificates.security.UserRequestValidation;
 import com.example.certificates.service.interfaces.ICertificateGeneratorService;
 import com.example.certificates.service.interfaces.ICertificateService;
 import org.hibernate.Hibernate;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -49,6 +52,7 @@ public class CertificateService implements ICertificateService {
     private final ICertificateGeneratorService certificateGeneratorService;
 
     private final CertificateWithdrawRepository certificateWithdrawRepository;
+    private static final Logger logger = LoggerFactory.getLogger(CertificateController.class);
 
 
     @Autowired
@@ -75,6 +79,10 @@ public class CertificateService implements ICertificateService {
     public List<CertificateRequestResponse> getPastRequests(Map<String, String> authHeader) {
 
         String role = this.userRequestValidation.getRoleFromToken(authHeader);
+        Integer usId = this.userRequestValidation.getUserId(authHeader);
+
+        logger.info("Korisnik sa ID: " + usId + " je pokrenuo funkcionalnost za dobavljanje zahteva za izdavanje sertifikata.");
+
         List<CertificateRequestResponse> requests = new ArrayList<>();
         if(role.equalsIgnoreCase("admin")){
              requests =  this.certificateRequestRepository.getAllRequests();
@@ -96,6 +104,8 @@ public class CertificateService implements ICertificateService {
 
         String role = this.userRequestValidation.getRoleFromToken(authHeader);
         Integer userId = this.userRequestValidation.getUserId(authHeader);
+        logger.info("Korisnik sa id: " + userId + " je pokrenuo funkcionalnost za kreiranje sertifikata.");
+
         Certificate issuer = null;
         if (!certificateRequest.getIssuerSN().isEmpty()){
             issuer = this.certificateRepository.findByIssuerSN(certificateRequest.getIssuerSN());
@@ -137,11 +147,15 @@ public class CertificateService implements ICertificateService {
             return newRequest;
         }
         if(certificateRequest.getType().toString().equalsIgnoreCase(CertificateType.ROOT.toString())){
+
+            logger.warn("Korisnik sa id: " + userId + " nije uspesno kreirao sertifikat.");
             throw new InvalidCertificateTypeException("Cannot create root certificate as a default user");
         }
         validateIssuer(certificateRequest);
         request.setCertificateType(CertificateType.valueOf(certificateRequest.getType()));
         if(issuer == null){
+            logger.warn("Korisnik sa id: " + userId + " nije uspesno kreirao sertifikat.");
+
             throw new NonExistingParentCertificateException("Parent with that serial number does not exist");
         }
         CertificateRequest newRequest = this.certificateRequestRepository.save(request);
@@ -149,16 +163,21 @@ public class CertificateService implements ICertificateService {
         if(issuer.getUser().getId() == userId.longValue()){
             this.acceptRequest(newRequest.getId(), authHeader);
         }
+        logger.info("Korisnik sa id: " + userId + " je uspesno kreirao sertifikat.");
+
         return newRequest;
     }
 
     @Override
     public boolean isValid(Long id) {
+        logger.info("Ulogovan korisnik je pokrenuo funkcionalnost za proveru validnosti sertifikata preko IDa: " + id);
 
         Optional<Certificate> certificate = certificateRepository.findById(id);
-        if(certificate.isEmpty())
-            throw new NonExistingCertificateException("Certificate with the given ID does not exist.");
+        if(certificate.isEmpty()) {
 
+            logger.warn("Sertifikat sa idom: " + id + " ne postoji.");
+            throw new NonExistingCertificateException("Certificate with the given ID does not exist.");
+        }
         if(isExpired(certificate.get())) return false;
         if(isWithdrawn(certificate.get())) return false;
         return !isStoredCertificateInvalid(id);
@@ -181,6 +200,8 @@ public class CertificateService implements ICertificateService {
     @Override
     public CertificateWithdrawDTO withdraw(Long id, WithdrawReasonDTO withdrawReason, Map<String, String> headers) {
         Integer userId = this.userRequestValidation.getUserId(headers);
+        logger.info("Korisnik sa ID: " + userId + " je pokrenuo funkcionalnost za povlacenje sertifikata.");
+
         String role = this.userRequestValidation.getRoleFromToken(headers);
 
         Optional<User> userOpt = this.userRepository.findById(userId.longValue());
@@ -214,6 +235,7 @@ public class CertificateService implements ICertificateService {
         );
         withdrawCertificateChain(id, now, userOpt.get(), withdrawReason.getReason());
 
+        logger.info("Korisnik sa ID: " + userId + " je uspesno povukao zeljeni sertifikat i svu njegovudecu.");
         return new CertificateWithdrawDTO(certificate.getId(), withdrawReason.getReason());
     }
 
@@ -333,6 +355,8 @@ public class CertificateService implements ICertificateService {
 
         if(file.getSize() > 1073741824) {
             //return false;
+            logger.warn("Korisnik je pokusao da uploaduje fajl koji je veci od dozvoljene granice,");
+
             throw new InvalidFileException("Upladed file is bigger than 1gb");
         }
 
@@ -340,6 +364,8 @@ public class CertificateService implements ICertificateService {
         String fileExtension = fileName.substring(fileName.lastIndexOf(".") + 1).toLowerCase();
         if(!fileExtension.equals("crt")) {
            // return false;
+            logger.warn("Korisnik je pokusao da uploaduje fajl koji nije crt formata.");
+
             throw new InvalidFileException("Uploaded file isn't .crt file");
         }
 
@@ -358,6 +384,8 @@ public class CertificateService implements ICertificateService {
             cert = (X509Certificate) factory.generateCertificate(inputStream);
         } catch (CertificateException e) {
             //return null;
+            logger.warn("Korisnik je pokusao da uploaduje fajl koji je bio modifikovan.");
+
             throw new InvalidFileException("Certificate has been modified");
         }
 
@@ -433,6 +461,8 @@ public class CertificateService implements ICertificateService {
         String role = this.userRequestValidation.getRoleFromToken(authHeader);
 
         Optional<User> userOpt = this.userRepository.findById(userId.longValue());
+        logger.info("Korisnik sa id: " + userId + " je pokrenuo funkcionalnost za preuzimanje fajlova");
+
         if(userOpt.isEmpty()) throw new NonExistingUserException("User with given id not found");
 
 
@@ -454,9 +484,10 @@ public class CertificateService implements ICertificateService {
             zipOutputStream.closeEntry();
 
             Optional<Certificate> certificate = certificateRepository.findById(certificateId);
-            if(certificate.isEmpty())
+            if(certificate.isEmpty()) {
                 throw new NonExistingCertificateException("Certificate with the given ID does not exist.");
 
+            }
 
             if(role.equals(UserRole.ADMIN.toString()) || (long)userId == certificate.get().getUser().getId()){
 
@@ -479,12 +510,14 @@ public class CertificateService implements ICertificateService {
             throw new InvalidFileException("Error while creating zip archive");
         }
 
+        logger.warn("Korisnik sa id: " + userId + " je uspesno preuzeo fajl.");
         return byteArrayOutputStream.toByteArray();
     }
 
     private boolean isStoredCertificateInvalid(Long id){
         Optional<Certificate> certificate = this.certificateRepository.findById(id);
         if(certificate.isEmpty()){
+
             throw new NonExistingCertificateException("Certificate with that id does not exist");
         }
         String publicKey = certificate.get().getPublicKey();
@@ -534,6 +567,7 @@ public class CertificateService implements ICertificateService {
 
         Integer userId = this.userRequestValidation.getUserId(authHeader);
 
+        logger.info("Korisnik sa id: " + userId + " je pokrenuo funkcionalnost za odbijanje sertifikata");
         Optional<CertificateRequest> request = this.certificateRequestRepository.findById(id);
         if(request.isEmpty()) throw new NonExistingRequestException("The request with the given id doesn't exist");
 
@@ -551,6 +585,7 @@ public class CertificateService implements ICertificateService {
         DeclineRequestDTO declineRequestDTO = new DeclineRequestDTO(request.get().getId(), declineReason);
         this.certificateRequestRepository.save(request.get());
 
+        logger.info("Korisnik sa id: " + userId + " je uspesno odbio sertifikat");
 
         return declineRequestDTO;
     }
@@ -559,26 +594,36 @@ public class CertificateService implements ICertificateService {
     public String acceptRequest(Long id, Map<String, String> authHeader) {
 
         Integer userId = this.userRequestValidation.getUserId(authHeader);
+        logger.info("Korisnik sa id: " + userId + " je pokrenuo funkcionalnost za prihvatanje zahteva");
+
         Optional<CertificateRequest> request = this.certificateRequestRepository.findById(id);
         if(request.isEmpty()) throw new NonExistingRequestException("The request with the given id doesn't exist");
 
         if (request.get().getCertificateType()!=CertificateType.ROOT){
             if (this.certificateRequestRepository.getIssuerCertificateUserIdByRequestId(request.get().getId()) == null){
+                logger.warn("Korisnik sa id: " + userId + " nije uspesno prihvatio zahtev.");
+
                 throw new NonExistingParentCertificateException("Invalid parent Id");
             }
 
             if (!this.userRequestValidation.getRoleFromToken(authHeader).equalsIgnoreCase("admin") && userId.longValue() != this.certificateRequestRepository.getIssuerCertificateUserIdByRequestId(request.get().getId())) {
+                logger.warn("Korisnik sa id: " + userId + " nije uspesno prihvatio zahtev.");
+
                 throw new NonExistingRequestException("The request with the given id doesn't exist");
             }
         }
 
         if (request.get().getStatus()!=RequestStatus.PENDING){
+            logger.warn("Korisnik sa id: " + userId + " nije uspesno prihvatio zahtev.");
+
             throw new RequestAlreadyProcessedException("The request has already been processed");
         }
         KeyPair keyPair = certificateGeneratorService.generateKeyPair();
         this.certificateGeneratorService.createCertificate(request.get(), keyPair);
         request.get().setStatus(RequestStatus.ACCEPTED);
         this.certificateRequestRepository.save(request.get());
+        logger.info("Korisnik sa id: " + userId + " je uspesno prihvatio zahtev");
+
         return "Request accepted";
     }
 
