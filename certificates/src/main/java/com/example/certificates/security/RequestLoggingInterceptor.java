@@ -23,19 +23,20 @@ public class RequestLoggingInterceptor implements HandlerInterceptor {
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
 
-        String token = request.getHeader("X-Auth-Token");
-        if(token == null){
-            logger.info("Neulogovan/neregistrovan korisnik je izvrsio : {} zahtev sa endpointa {}", request.getMethod(), request.getRequestURI());
-            return true;
-        }
-
-        String[] chunks = token.split("\\.");
-        Base64.Decoder decoder = Base64.getUrlDecoder();
-        String payload = new String(decoder.decode(chunks[1]));
-        Gson g = new Gson();
-        Token tolkien = g.fromJson(payload, Token.class);
-
-        logger.info("Korisnik sa ID: {}, je izvrsio : {} zahtev sa endpointa {}", tolkien.getId(), request.getMethod(), request.getRequestURI());
+//        String token = request.getHeader("X-Auth-Token");
+//        if(token == null){
+//            logger.info("Neulogovan/neregistrovan korisnik je izvrsio : {} zahtev sa endpointa {}", request.getMethod(), request.getRequestURI());
+//            return true;
+//        }
+//
+//        String[] chunks = token.split("\\.");
+//        Base64.Decoder decoder = Base64.getUrlDecoder();
+//        String payload = new String(decoder.decode(chunks[1]));
+//        Gson g = new Gson();
+//        Token tolkien = g.fromJson(payload, Token.class);
+//
+//        logger.info("Korisnik sa ID: {}, je izvrsio : {} zahtev sa endpointa {}", tolkien.getId(), request.getMethod(), request.getRequestURI());
+//        return true;
         return true;
     }
 
