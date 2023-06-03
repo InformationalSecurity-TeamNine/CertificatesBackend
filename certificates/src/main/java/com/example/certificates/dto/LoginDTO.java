@@ -1,5 +1,6 @@
 package com.example.certificates.dto;
 
+import com.example.certificates.enums.VerifyType;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -25,5 +26,7 @@ public class LoginDTO {
     @NotEmpty(message = "{required}")
     @Pattern(regexp = "^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[#?!@$%^&*-]).{8,}$", message = "{invalidPasswordFormat}")
     private String password;
+
+    private VerifyType type;
 
 }

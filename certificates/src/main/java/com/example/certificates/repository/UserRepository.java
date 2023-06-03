@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 @Repository
@@ -25,4 +26,9 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     @Query(value = "SELECT u FROM User u WHERE u.verification.verificationCode = ?1")
     Optional<User> findUserByVerification(String code);
+
+    @Query(value = "select u.lastTimePasswordChanged from User u where u.email=:email")
+    Optional<LocalDateTime> findLastTimePasswordChanged(String email);
+
+
 }
