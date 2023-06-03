@@ -44,7 +44,7 @@ public class WebSecurityConfiguration implements WebMvcConfigurer {
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         CorsConfiguration corsConfiguration = new CorsConfiguration();
         corsConfiguration.setAllowedHeaders(List.of("X-Auth-Token", "skip", "Cache-Control", "Content-Type"));
-        corsConfiguration.setAllowedOrigins(List.of("http://localhost:4200","http://localhost:8082"));
+        corsConfiguration.setAllowedOrigins(List.of("http://localhost:4200","http://localhost:8082", "https://localhost:4200","https://localhost:8082"));
         corsConfiguration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PUT","OPTIONS","PATCH", "DELETE"));
         corsConfiguration.setAllowCredentials(true);
         corsConfiguration.setExposedHeaders(List.of("X-Auth-Token"));
