@@ -48,7 +48,7 @@ public class WebSecurityConfiguration implements WebMvcConfigurer {
         corsConfiguration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PUT","OPTIONS","PATCH", "DELETE"));
         corsConfiguration.setAllowCredentials(true);
         corsConfiguration.setExposedHeaders(List.of("X-Auth-Token"));
-        http.headers().frameOptions().disable();
+        http.headers().xssProtection().and().contentSecurityPolicy("scripts-src 'self'").and().frameOptions().disable();
         http.csrf().disable()
                 .authorizeRequests()
                 .antMatchers(HttpMethod.GET, "/api/certificate").permitAll()
